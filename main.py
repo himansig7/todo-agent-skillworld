@@ -26,21 +26,24 @@ os.environ["OPENAI_TRACING_ENABLED"] = "1"
 weave.init("todo-agent-weave")
 
 SESSION_FILE = "data/session_default.json"
+MAX_TURNS = 12 # Max conversation turns to keep in history
 
-def load_session():
+def load_session() -> list:
+    """Load message history from the session file."""
     try:
         with open(SESSION_FILE, "r") as f:
             data = json.load(f)
-        return data.get("history", []), data.get("last_response_id", None)
-    except FileNotFoundError:
-        return [], None
+        return data.get("history", [])
+    except (FileNotFoundError, json.JSONDecodeError):
+        return []
 
-def save_session(history, last_response_id):
+def save_session(history: list):
+    """Save message history to the session file."""
     with open(SESSION_FILE, "w") as f:
-        json.dump({"history": history, "last_response_id": last_response_id}, f)
+        json.dump({"history": history}, f, indent=2)
 
 async def main():
-    history, last_response_id = load_session()
+    history = load_session()
     print("To-Do Agent (LLM-powered, all tracing enabled). Type 'exit' to quit.")
     while True:
         user_input = input("\nYou: ")
@@ -49,22 +52,22 @@ async def main():
             break
         # Add the new user message to history
         history.append({"role": "user", "content": user_input})
-        # Run the agent with full history and chaining
+
+        # Trim history to the last MAX_TURNS to avoid token overflow.
+        user_message_indices = [i for i, msg in enumerate(history) if msg.get("role") == "user"]
+        if len(user_message_indices) > MAX_TURNS:
+            start_index = user_message_indices[-MAX_TURNS]
+            history = history[start_index:]
+
+        # Run the agent with the managed history
         result = await Runner.run(
             agent,
             input=history,
-            previous_response_id=last_response_id,
         )
         print(f"Agent: {result.final_output}")
-        # Update history and last_response_id for next turn
+        # Update history for next turn
         history = result.to_input_list()
-        # Try to get the response ID from possible attributes
-        last_response_id = getattr(result, "openai_response_id", None)
-        if last_response_id is None and hasattr(result, "metadata"):
-            last_response_id = getattr(result.metadata, "openai_response_id", None)
-        # Optionally, print available attributes for debugging
-        # print(dir(result))
-        save_session(history, last_response_id)
+        save_session(history)
 
 if __name__ == "__main__":
     asyncio.run(main()) 
