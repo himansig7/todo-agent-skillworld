@@ -54,7 +54,11 @@ All required and optional environment variables are documented in the `.env.exam
 python main.py
 ```
 
-- Interact with the agent in natural language (e.g., "Add a to-do: Buy groceries.", "Show my to-do list.").
+- Interact with the agent in natural language.
+- To see the new project features, try requests like:
+  - "Create a project called 'Home Reno' with these tasks: Paint the kitchen, Fix the fence, and Replace the mailbox."
+  - "Show me my 'Home Reno' project tasks."
+  - "Add a task to the 'Home Reno' project: 'Buy paint'."
 - Type `exit` or `quit` to end the session.
 - Traces are sent to OpenAI, Weave (W&B), and Phoenix Cloud (Arize web UI).
 

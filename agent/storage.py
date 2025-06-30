@@ -7,15 +7,18 @@ Handles reading and writing to the local todos.json file.
 
 import os
 import json
-from typing import List, Any, Tuple
+from typing import List, Any, Tuple, Optional
 from datetime import datetime, timezone
 from pydantic import BaseModel, Field
 
 DATA_PATH = os.path.join(os.path.dirname(os.path.dirname(__file__)), "data", "todos.json")
 
 class TodoItem(BaseModel):
+    """Represents a single to-do item in the list."""
     id: int
-    content: str = Field(..., description="The text of the to-do item.")
+    name: str = Field(..., description="A short, clear name for the to-do item.")
+    description: Optional[str] = Field(default=None, description="An optional, more detailed description of the to-do item.")
+    project: Optional[str] = Field(default=None, description="An optional project name to group related tasks.")
     completed: bool = Field(default=False, description="Whether the to-do is completed.")
     created_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat(), description="Creation timestamp (UTC ISO 8601).")
     updated_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat(), description="Last update timestamp (UTC ISO 8601).")
@@ -48,12 +51,14 @@ def get_next_id(todos: List[TodoItem]) -> int:
     return max([t.id for t in todos], default=0) + 1
 
 
-def create_todo_item(todos: List[TodoItem], content: str) -> TodoItem:
+def create_todo_item(todos: List[TodoItem], name: str, description: Optional[str] = None, project: Optional[str] = None) -> TodoItem:
     """Factory to create a new TodoItem with a unique id and timestamps."""
     now = datetime.now(timezone.utc).isoformat()
     return TodoItem(
         id=get_next_id(todos),
-        content=content,
+        name=name,
+        description=description,
+        project=project,
         completed=False,
         created_at=now,
         updated_at=now,
