@@ -19,12 +19,13 @@ class TodoCrudArgs(TypedDict, total=False):
     action: Literal["create", "read", "update", "delete"]
     item_id: Optional[int]
     content: Optional[str]
+    completed: Optional[bool]
 
 # -----------------------------------------------------------------------------
 # CRUD Function Tool
 # -----------------------------------------------------------------------------
 @function_tool
-def todo_crud(ctx: RunContextWrapper[Any], action: Literal["create", "read", "update", "delete"], item_id: Optional[int] = None, content: Optional[str] = None) -> str:
+def todo_crud(ctx: RunContextWrapper[Any], action: Literal["create", "read", "update", "delete"], item_id: Optional[int] = None, content: Optional[str] = None, completed: Optional[bool] = None) -> str:
     """
     Perform CRUD operations on the to-do list.
 
@@ -32,6 +33,7 @@ def todo_crud(ctx: RunContextWrapper[Any], action: Literal["create", "read", "up
         action: 'create', 'read', 'update', or 'delete'
         item_id: ID of the to-do item (for update/delete/read)
         content: Content for create/update
+        completed: Completed status for update
     Returns:
         str: Result message or data
     """
@@ -53,14 +55,17 @@ def todo_crud(ctx: RunContextWrapper[Any], action: Literal["create", "read", "up
             else:
                 return '[\n' + ',\n'.join([t.model_dump_json(indent=2) for t in todos]) + '\n]'
         elif action == "update":
-            if item_id is None or not content:
-                return "Error: 'item_id' and 'content' are required for update."
+            if item_id is None:
+                return "Error: 'item_id' is required for update."
             for t in todos:
                 if t.id == item_id:
-                    t.content = content
+                    if content is not None:
+                        t.content = content
+                    if completed is not None:
+                        t.completed = completed
                     t.updated_at = datetime.now(timezone.utc).isoformat()
                     save_todos(todos)
-                    return f"Updated to-do item {item_id}: {content}"
+                    return f"Updated to-do item {item_id}."
             return f"To-do item with id {item_id} not found."
         elif action == "delete":
             if item_id is None:
