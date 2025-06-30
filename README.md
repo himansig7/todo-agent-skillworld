@@ -2,7 +2,7 @@
 
 A minimal OpenAI Agents SDK to-do list app with full CRUD operations and built-in tracing/observation integrations for:
 - OpenAI Platform Tracing
-- Arize Phoenix
+- Arize Phoenix Cloud
 - Weights & Biases Weave
 
 This project demonstrates a 101-level AI engineering workflow: building a to-do app agent, observing traces in multiple platforms, and following best practices for Python project management.
@@ -13,17 +13,14 @@ This project demonstrates a 101-level AI engineering workflow: building a to-do 
 
 ```
 todo-agent/
-│
-├── main.py                # Unified entry point for the agent and all tracing
-├── agent/                 # Agent logic and tools
+├── main.py                  # Entry point, tracing, CLI loop
+├── agent/
 │   ├── __init__.py
-│   ├── todo_agent.py      # Core agent logic (OpenAI SDK, CRUD)
-│   └── storage.py         # JSON storage logic
+│   ├── todo_agent.py        # Core agent logic (CRUD, OpenAI SDK)
+│   └── storage.py           # JSON storage logic
 ├── data/
-│   └── todos.json         # Local JSON file for to-do items
-├── .cursor/
-│   └── rules/
-│       └── project-standards.mdc
+│   ├── todos.json           # (empty list on init)
+│   └── session_default.json # (empty session on init)
 ├── .gitignore
 ├── .python-version
 ├── pyproject.toml
@@ -41,32 +38,13 @@ todo-agent/
    uv pip install
    ```
 3. **Environment variables:**
-   - Create a `.env` file for your API keys and secrets. See below for required and optional variables.
+   - Copy `.env.example` to `.env` and fill in your API keys and secrets. All required and optional variables are documented in `.env.example`.
 
 ---
 
 ## Environment Variables
 
-Create a `.env` file in your project root with at least:
-
-```
-OPENAI_API_KEY=sk-...
-```
-
-Optional (for tracing integrations):
-```
-# Enable OpenAI Platform tracing
-OPENAI_TRACING_ENABLED=1
-
-# Weights & Biases Weave
-WANDB_API_KEY=your-wandb-api-key
-
-# Arize Phoenix
-PHOENIX_API_KEY=your-arize-api-key
-PHOENIX_PROJECT=your-arize-project
-PHOENIX_CLIENT_HEADERS=...
-PHOENIX_COLLECTOR_ENDPOINT=...
-```
+All required and optional environment variables are documented in the `.env.example` file. Copy this file to `.env` and update the values as needed for your environment and integrations.
 
 ---
 
@@ -78,6 +56,15 @@ python main.py
 
 - Interact with the agent in natural language (e.g., "Add a to-do: Buy groceries.", "Show my to-do list.").
 - Type `exit` or `quit` to end the session.
+- Traces are sent to OpenAI, Weave (W&B), and Phoenix Cloud (Arize web UI).
+
+---
+
+## Data Files
+
+- `data/todos.json` and `data/session_default.json` are initialized as empty in the repo.
+- These files are updated as you use the app, but are always reset to empty for a clean repo state.
+- If you want to reset your app, simply clear these files to their initialized state.
 
 ---
 
@@ -85,7 +72,7 @@ python main.py
 
 All tracing integrations are enabled by default in `main.py`:
 - **OpenAI Platform**: Native support, see [OpenAI docs](https://platform.openai.com/docs/observability/overview)
-- **Arize Phoenix**: See [Arize Phoenix docs](https://docs.arize.com/phoenix/)
+- **Arize Phoenix Cloud**: See [Phoenix Otel Python SDK](https://arize.com/docs/phoenix/sdk-api-reference/python-pacakges/arize-phoenix-otel)
 - **Weights & Biases Weave**: See [W&B Weave docs](https://docs.wandb.ai/guides/weave)
 
 You can view traces in each provider's dashboard after running the agent.
