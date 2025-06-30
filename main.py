@@ -8,8 +8,14 @@ Entry point for the todo-agent project.
 import os
 from dotenv import load_dotenv
 load_dotenv()
+
+from phoenix.otel import register
+register(
+    project_name="todo-agent",
+    auto_instrument=True
+)
+
 import weave
-import phoenix as px
 import asyncio
 import json
 from agents import Runner
@@ -18,7 +24,6 @@ from agent.todo_agent import agent
 # Enable all tracing integrations
 os.environ["OPENAI_TRACING_ENABLED"] = "1"
 weave.init("todo-agent-weave")
-px.launch_app()
 
 SESSION_FILE = "data/session_default.json"
 

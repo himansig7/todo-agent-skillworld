@@ -107,6 +107,7 @@ Always confirm actions and provide clear feedback.
 
 agent = Agent(
     name="To-Do Agent",
+    model="gpt-4.1-mini"
     instructions=AGENT_PROMPT,
     tools=[todo_crud],
 )
