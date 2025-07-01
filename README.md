@@ -1,11 +1,11 @@
 # todo-agent
 
-A minimal OpenAI Agents SDK to-do list app with full CRUD operations and built-in tracing/observation integrations for:
+A minimal OpenAI Agents SDK to-do list app with a full CRUD toolset and built-in web search. This project includes tracing/observation integrations for:
 - OpenAI Platform Tracing
 - Arize Phoenix Cloud
 - Weights & Biases Weave
 
-This project demonstrates a 101-level AI engineering workflow: building a to-do app agent, observing traces in multiple platforms, and following best practices for Python project management.
+This project demonstrates a 101-level AI engineering workflow: building a modular agent, observing traces, and following best practices for Python project management.
 
 ---
 
@@ -13,20 +13,32 @@ This project demonstrates a 101-level AI engineering workflow: building a to-do 
 
 ```
 todo-agent/
-├── main.py                  # Entry point, tracing, CLI loop
+├── main.py                  # Entry point, tracing, & CLI loop
 ├── agent/
 │   ├── __init__.py
-│   ├── todo_agent.py        # Core agent logic (CRUD, OpenAI SDK)
-│   └── storage.py           # JSON storage logic
+│   ├── todo_agent.py        # Defines the agent, its tools, and prompt
+│   └── storage.py           # Data access layer for todos.json
 ├── data/
 │   ├── todos.json           # (empty list on init)
-│   └── session_default.json # (empty session on init)
+│   └── session_default.json # Stores conversation history
 ├── .gitignore
 ├── .python-version
 ├── pyproject.toml
 ├── README.md
 └── uv.lock
 ```
+
+---
+
+## Agent Capabilities
+
+The agent has access to a suite of tools to be a proactive assistant:
+
+- **`create_todo`**: Adds a new task to the list.
+- **`read_todos`**: Lists all tasks or filters by project.
+- **`update_todo`**: Modifies an existing task (e.g., renames it or marks it as complete).
+- **`delete_todo`**: Removes a task.
+- **`web_search_preview`**: Searches the web to find information and clarify tasks. For example, if you ask it to "plan a trip," it will offer to research destinations for you.
 
 ---
 
@@ -56,9 +68,9 @@ python main.py
 
 - Interact with the agent in natural language.
 - To see the new project features, try requests like:
-  - "Create a project called 'Home Reno' with these tasks: Paint the kitchen, Fix the fence, and Replace the mailbox."
-  - "Show me my 'Home Reno' project tasks."
-  - "Add a task to the 'Home Reno' project: 'Buy paint'."
+  - "I need to plan a vacation."
+  - "Add 'buy a new laptop' to my list." (The agent might ask if you want help researching models).
+  - "Show me my 'House Chores' project tasks."
 - Type `exit` or `quit` to end the session.
 - Traces are sent to OpenAI, Weave (W&B), and Phoenix Cloud (Arize web UI).
 

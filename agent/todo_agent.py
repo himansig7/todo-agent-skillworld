@@ -1,157 +1,134 @@
 """
-Core agent logic for the todo-agent project.
-- Integrates with OpenAI Agents SDK
-- Handles CRUD operations for to-do items via a single function tool
-- Connects to tracing/observation libraries
+This file defines the agent's identity, instructions, and available tools.
+
+The tools defined here act as the bridge between the agent's reasoning
+and the application's data layer in `storage.py`.
 """
 
 import json
-from typing import Optional, Any, TypedDict, Literal
-from pydantic import ValidationError
+from typing import Optional, Any
+from pydantic import BaseModel, Field, ValidationError
 from datetime import datetime, timezone
-from agents import Agent, function_tool, RunContextWrapper
-from agent.storage import TodoItem, load_todos, save_todos, get_next_id, create_todo_item
+from agents import Agent, function_tool, RunContextWrapper, WebSearchTool
+from agent.storage import TodoStorage
 
 # -----------------------------------------------------------------------------
-# Tool Argument Schema
+# Tool Definitions
 # -----------------------------------------------------------------------------
-class TodoCrudArgs(TypedDict, total=False):
-    """Arguments for the todo_crud tool."""
-    action: Literal["create", "read", "update", "delete"]
-    item_id: Optional[int]
-    name: Optional[str]
-    description: Optional[str]
-    project: Optional[str]
-    completed: Optional[bool]
+# Note: The `ctx: RunContextWrapper[Any]` parameter is a placeholder for passing
+# run-specific context to tools, such as user IDs or database connections.
+# We don't use it in this simple app, but it's a best practice to include it.
 
-# -----------------------------------------------------------------------------
-# CRUD Function Tool
-# -----------------------------------------------------------------------------
 @function_tool
-def todo_crud(
-    ctx: RunContextWrapper[Any], 
-    action: Literal["create", "read", "update", "delete"], 
-    item_id: Optional[int] = None, 
-    name: Optional[str] = None, 
-    description: Optional[str] = None, 
-    project: Optional[str] = None, 
-    completed: Optional[bool] = None
+def create_todo(
+    ctx: RunContextWrapper[Any],
+    name: str = Field(..., description="The name of the to-do item."),
+    description: Optional[str] = Field(default=None, description="A detailed description of the to-do item."),
+    project: Optional[str] = Field(default=None, description="A project name to group related tasks.")
 ) -> str:
-    """
-    Perform CRUD operations on the to-do list.
-
-    Args:
-        action: 'create', 'read', 'update', or 'delete'.
-        item_id: ID of the to-do item (for update/delete/read).
-        name: The name of the to-do item (for create/update).
-        description: A detailed description of the to-do item (for create/update).
-        project: A project name to group related tasks (for create/update).
-        completed: The completion status of the to-do item (for update).
-    Returns:
-        str: Result message or data.
-    """
+    """Creates a new to-do item and adds it to the list."""
     try:
-        todos = load_todos()
-        if action == "create":
-            if not name:
-                return "Error: 'name' is required for create."
-            item = create_todo_item(todos, name, description, project)
-            todos.append(item)
-            save_todos(todos)
-            return f"Created to-do item {item.id}: {name}"
-        elif action == "read":
-            if item_id is not None:
-                for t in todos:
-                    if t.id == item_id:
-                        return t.model_dump_json(indent=2)
-                return f"To-do item with id {item_id} not found."
-            else:
-                # Filter by project if provided
-                if project:
-                    project_todos = [t for t in todos if t.project == project]
-                    if not project_todos:
-                        return f"No to-do items found for project '{project}'."
-                    return '[\n' + ',\n'.join([t.model_dump_json(indent=2) for t in project_todos]) + '\n]'
-                return '[\n' + ',\n'.join([t.model_dump_json(indent=2) for t in todos]) + '\n]'
-        elif action == "update":
-            if item_id is None:
-                return "Error: 'item_id' is required for update."
-            
-            item_updated = False
-            for t in todos:
-                if t.id == item_id:
-                    if name is not None:
-                        t.name = name
-                        item_updated = True
-                    if description is not None:
-                        t.description = description
-                        item_updated = True
-                    if project is not None:
-                        t.project = project
-                        item_updated = True
-                    if completed is not None:
-                        t.completed = completed
-                        item_updated = True
-                    
-                    if item_updated:
-                        t.updated_at = datetime.now(timezone.utc).isoformat()
-                        save_todos(todos)
-                        return f"Updated to-do item {item_id}."
-                    else:
-                        return "Error: No fields to update were provided."
-            return f"To-do item with id {item_id} not found."
-        elif action == "delete":
-            if item_id is None:
-                return "Error: 'item_id' is required for delete."
-            new_todos = [t for t in todos if t.id != item_id]
-            if len(new_todos) == len(todos):
-                return f"To-do item with id {item_id} not found."
-            save_todos(new_todos)
+        storage = TodoStorage()
+        item = storage.create(name, description, project)
+        return f"Created to-do item {item.id}: {item.name}"
+    except Exception as e:
+        return f"Error creating to-do: {e}"
+
+@function_tool
+def read_todos(
+    ctx: RunContextWrapper[Any],
+    item_id: Optional[int] = Field(default=None, description="ID of a specific to-do item to read."),
+    project: Optional[str] = Field(default=None, description="Filter to-do items by a specific project.")
+) -> str:
+    """Reads all to-do items, or a specific item/project if an ID or project name is provided."""
+    try:
+        storage = TodoStorage()
+        if item_id is not None:
+            item = storage.read_by_id(item_id)
+            return item.model_dump_json(indent=2) if item else f"To-do item with id {item_id} not found."
+        
+        if project:
+            project_todos = storage.read_by_project(project)
+            if not project_todos:
+                return f"No to-do items found for project '{project}'."
+            return '[\n' + ',\n'.join([t.model_dump_json(indent=2) for t in project_todos]) + '\n]'
+        
+        all_todos = storage.read_all()
+        return '[\n' + ',\n'.join([t.model_dump_json(indent=2) for t in all_todos]) + '\n]'
+    except Exception as e:
+        return f"Error reading to-dos: {e}"
+
+@function_tool
+def update_todo(
+    ctx: RunContextWrapper[Any],
+    item_id: int = Field(..., description="The ID of the to-do item to update."),
+    name: Optional[str] = Field(default=None, description="The new name of the to-do item."),
+    description: Optional[str] = Field(default=None, description="The new description of the to-do item."),
+    project: Optional[str] = Field(default=None, description="The new project name for the to-do item."),
+    completed: Optional[bool] = Field(default=None, description="The new completion status of the to-do item.")
+) -> str:
+    """Updates an existing to-do item's attributes."""
+    try:
+        storage = TodoStorage()
+        update_data = {'name': name, 'description': description, 'project': project, 'completed': completed}
+        update_fields = {k: v for k, v in update_data.items() if v is not None}
+
+        if not update_fields:
+            return "Error: No fields to update were provided."
+        
+        updated_item = storage.update(item_id, update_fields)
+        return f"Updated to-do item {item_id}." if updated_item else f"To-do item with id {item_id} not found."
+    except Exception as e:
+        return f"Error updating to-do: {e}"
+
+@function_tool
+def delete_todo(
+    ctx: RunContextWrapper[Any],
+    item_id: int = Field(..., description="The ID of the to-do item to delete.")
+) -> str:
+    """Deletes a to-do item from the list by its ID."""
+    try:
+        storage = TodoStorage()
+        if storage.delete(item_id):
             return f"Deleted to-do item {item_id}."
         else:
-            return "Error: Unknown action. Use 'create', 'read', 'update', or 'delete'."
-    except ValidationError as ve:
-        return f"Validation error: {ve}"
+            return f"To-do item with id {item_id} not found."
     except Exception as e:
-        return f"Unexpected error: {e}"
+        return f"Error deleting to-do: {e}"
 
 # -----------------------------------------------------------------------------
 # Agent Prompt & Setup
 # -----------------------------------------------------------------------------
 AGENT_PROMPT = """
-You are an intelligent assistant that manages a to-do list for the user.
-You support creating, reading, updating, and deleting to-do items. Each to-do item has the following structure:
-- `name`: A short, clear name for the task (required).
-- `description`: An optional, more detailed description.
-- `project`: An optional project name to group related tasks. This is great for tracking sub-tasks.
-- `completed`: A flag to mark the task as done.
+You are an intelligent assistant that helps users manage a to-do list. Your primary goal is to help the user create, track, and complete their tasks effectively.
 
-Use the 'todo_crud' tool for all operations.
+You have access to a suite of tools to manage the to-do list:
+- `create_todo`: Use this to add a new task.
+- `read_todos`: Use this to view existing tasks. You can view all tasks, or filter by a specific project.
+- `update_todo`: Use this to modify an existing task, such as changing its name or marking it as complete.
+- `delete_todo`: Use this to remove a task from the list.
 
-Instructions:
-- To add a new to-do, you must provide at least a `name`. You can also include a `description` and a `project`.
-- To create sub-tasks, use the same `project` name for all related to-dos.
-- To view all to-dos, ask to "list" or "show" items. You can also ask to see all tasks for a specific `project`.
-- To update a to-do, specify the item `item_id` and the new `name`, `description`, `project`, or `completed` status.
-- To mark a task as done, use the 'update' action with `item_id` and set `completed` to `True`.
-- To delete a to-do, specify the `item_id`.
+You can also use a `web_search` tool to help users clarify their tasks. For example, if a user wants to "plan a trip," you can use web search to help them decide on a destination before creating specific to-do items like "Book flights to Hawaii."
 
-Example interactions:
-- "I need to build a bookshelf." (You might ask if this is a project and suggest creating sub-tasks).
-- "Create a project called 'Build Bookshelf' with these tasks: Design bookshelf, Buy materials, Assemble bookshelf."
-- "Show my 'Build Bookshelf' project tasks."
-- "Update item 3, set the description to 'Buy materials from Home Depot'."
-- "Mark task 2 as completed."
-- "Delete item 5."
+**Your Workflow:**
+- When a user adds a vague to-do item, be proactive! Offer to use web search to find the information needed to make the task more specific.
+- After a web search, always suggest creating or updating a to-do item with the new information.
+- For all operations, use the specific tool for the job (`create_todo` for adding, `update_todo` for changing, etc.).
 
-Always confirm actions and provide clear feedback. Be proactive and help the user structure their tasks effectively.
+**Example Interaction Flow:**
+- **User**: "Add 'plan my trip' to my list."
+- **Agent**: (Calls `create_todo` with name="plan my trip"). "Okay, I've added 'plan my trip'. To make this more actionable, can I help you research some destinations? Where are you thinking of going?"
+- **User**: "I'm not sure, maybe somewhere warm in December. Can you look up some ideas?"
+- **Agent**: (Calls `web_search`). "Based on my search, some popular warm destinations in December are Hawaii, Mexico, and the Caribbean. Do any of those sound good?"
+- **User**: "Mexico sounds great."
+- **Agent**: "Excellent! I'll update the task to be more specific." (Calls `update_todo` to change name to 'Plan trip to Mexico'). "Should I also add 'Book flights to Mexico' and 'Book hotel in Mexico' as new tasks?"
+
+Your goal is to be a helpful partner in planning, not just a list-taker.
 """
 
 agent = Agent(
     name="To-Do Agent",
     model="gpt-4.1-mini",
     instructions=AGENT_PROMPT,
-    tools=[todo_crud],
-)
-
-# TODO: Add tracing/observation integrations as needed 
+    tools=[create_todo, read_todos, update_todo, delete_todo, WebSearchTool()],
+) 
