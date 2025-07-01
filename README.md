@@ -14,6 +14,7 @@ This project demonstrates a 101-level AI engineering workflow: building a modula
 ```
 todo-agent/
 ├── main.py                  # Entry point, tracing, & CLI loop
+├── manage.py                # CLI for managing data (reset, seed)
 ├── agent/
 │   ├── __init__.py
 │   ├── todo_agent.py        # Defines the agent, its tools, and prompt
@@ -73,6 +74,22 @@ python main.py
   - "Show me my 'House Chores' project tasks."
 - Type `exit` or `quit` to end the session.
 - Traces are sent to OpenAI, Weave (W&B), and Phoenix Cloud (Arize web UI).
+
+---
+
+## Managing Data for Testing
+
+This project includes a `manage.py` script with commands to help you reset or seed your data, which is useful for testing or running evaluations.
+
+-   **Resetting Data**: To clear all to-do items and conversation history, run:
+    ```sh
+    python manage.py reset --yes
+    ```
+-   **Seeding Data**: To load a specific set of to-dos for a test, run:
+    ```sh
+    python manage.py seed
+    ```
+    This command uses `data/seed_todos.json` by default, but you can provide a path to a different file.
 
 ---
 

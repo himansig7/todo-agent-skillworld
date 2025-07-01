@@ -13,4 +13,5 @@ dependencies = [
     "weave>=0.51.54",
     "arize-phoenix>=11.2.0",
     "openinference-instrumentation-openai-agents>=0.1.14",
+    "typer[all]>=0.16.0",
 ]
