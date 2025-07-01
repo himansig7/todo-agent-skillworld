@@ -20,8 +20,9 @@ todo-agent/
 │   ├── todo_agent.py        # Defines the agent, its tools, and prompt
 │   └── storage.py           # Data access layer for todos.json
 ├── data/
-│   ├── todos.json           # (empty list on init)
-│   └── session_default.json # Stores conversation history
+│   ├── todos.json           # User-specific to-do items (auto-created, gitignored)
+│   ├── session_default.json # Conversation history (auto-created, gitignored)
+│   └── seed_todos.json      # Example data for the `manage.py seed` command
 ├── .gitignore
 ├── .python-version
 ├── pyproject.toml
@@ -95,9 +96,10 @@ This project includes a `manage.py` script with commands to help you reset or se
 
 ## Data Files
 
-- `data/todos.json` and `data/session_default.json` are initialized as empty in the repo.
-- These files are updated as you use the app, but are always reset to empty for a clean repo state.
-- If you want to reset your app, simply clear these files to their initialized state.
+The `data/` directory holds both user-generated data and example data:
+
+- **`todos.json` & `session_default.json`**: These files are created automatically when you first run the app. They are listed in the `.gitignore` file, so your local conversation history and to-do items will not be committed to the repository.
+- **`seed_todos.json`**: This file is included in the repository and provides a default set of to-dos that you can load using the `python manage.py seed` command. It serves as a good starting point for testing.
 
 ---
 
