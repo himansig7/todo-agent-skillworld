@@ -133,3 +133,6 @@ cython_debug/
 # User-specific data files
 data/todos.json
 data/session_default.json
+
+# Cursor editor files
+.cursor/
