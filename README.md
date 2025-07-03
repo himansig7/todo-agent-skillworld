@@ -40,7 +40,7 @@ The agent has access to a suite of tools to be a proactive assistant:
 - **`read_todos`**: Lists all tasks or filters by project.
 - **`update_todo`**: Modifies an existing task (e.g., renames it or marks it as complete).
 - **`delete_todo`**: Removes a task.
-- **`web_search_preview`**: Searches the web to find information and clarify tasks. For example, if you ask it to "plan a trip," it will offer to research destinations for you.
+- **`web_search`**: Searches the web to find information and clarify tasks. For example, if you ask it to "plan a trip," it will offer to research destinations for you.
 
 ---
 
