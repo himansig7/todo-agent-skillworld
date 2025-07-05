@@ -1,9 +1,20 @@
+---
+title: To-Do Agent
+emoji: ✅
+colorFrom: blue
+colorTo: purple
+sdk: gradio
+python_version: 3.12
+app_file: todo_gradio/gradio_app.py
+---
+
 # todo-agent
 
 A minimal OpenAI Agents SDK to-do list app with a full CRUD toolset and built-in web search. This project includes tracing/observation integrations for:
 - OpenAI Platform Tracing
 - Arize Phoenix Cloud
 - Weights & Biases Weave
+- A Gradio web UI for interactive use
 
 This project demonstrates a 101-level AI engineering workflow: building a modular agent, observing traces, and following best practices for Python project management.
 
@@ -13,12 +24,18 @@ This project demonstrates a 101-level AI engineering workflow: building a modula
 
 ```
 todo-agent/
-├── main.py                  # Entry point, tracing, & CLI loop
+├── main.py                  # Entry point for the CLI app
 ├── manage.py                # CLI for managing data (reset, seed)
 ├── agent/
 │   ├── __init__.py
 │   ├── todo_agent.py        # Defines the agent, its tools, and prompt
 │   └── storage.py           # Data access layer for todos.json
+├── todo_gradio/
+│   └── gradio_app.py        # Gradio web UI application
+├── tests/
+│   ├── run_demo_tests.py    # Test runner for demo scenarios
+│   ├── test_basic_operations.py
+│   └── test_web_search_demo.py
 ├── data/
 │   ├── todos.json           # User-specific to-do items (auto-created, gitignored)
 │   ├── session_default.json # Conversation history (auto-created, gitignored)
@@ -64,17 +81,22 @@ All required and optional environment variables are documented in the `.env.exam
 
 ## Running the App
 
+You can run the agent in two ways:
+
+### 1. Interactive Web UI (Gradio)
+
+This is the recommended way to use the agent.
+```sh
+python todo_gradio/gradio_app.py
+```
+The app will be available at a local URL (e.g., `http://127.0.0.1:7860`).
+
+### 2. Command-Line Interface (CLI)
 ```sh
 python main.py
 ```
-
 - Interact with the agent in natural language.
-- To see the new project features, try requests like:
-  - "I need to plan a vacation."
-  - "Add 'buy a new laptop' to my list." (The agent might ask if you want help researching models).
-  - "Show me my 'House Chores' project tasks."
 - Type `exit` or `quit` to end the session.
-- Traces are sent to OpenAI, Weave (W&B), and Phoenix Cloud (Arize web UI).
 
 ---
 
@@ -94,26 +116,22 @@ This project includes a `manage.py` script with commands to help you reset or se
 
 ## Test Suite
 
-The project includes a comprehensive test suite for automated testing and demonstration:
+The project includes a comprehensive test suite for automated testing and demonstration. See `tests/README.md` for detailed documentation.
 
 ```sh
-# Run all tests
-python tests/run_tests.py
+# Run all demo tests
+python tests/run_demo_tests.py all
 
-# Run individual tests
-python tests/run_tests.py basic
-python tests/run_tests.py multi
-python tests/run_tests.py complex
-python tests/run_tests.py websearch
+# Run individual demos
+python tests/run_demo_tests.py basic
+python tests/run_demo_tests.py websearch
 ```
 
-The test suite includes:
-- **Basic CRUD Test**: TodoItem model robustness with varied name/description patterns, project assignment
-- **Multi-Task Workflow Test**: Bulk operations, mixed todo patterns, selective deletion, project organization
-- **Complex Editing Test**: Full TodoItem model usage, description updates, completion workflows, comprehensive CRUD operations
-- **Web Search Integration Test**: Multi-tool workflow, proactive research, converting research into actionable todos
+The test suite demonstrates:
+- **Basic Operations**: Core agent functionality including CRUD and context.
+- **Web Search Demo**: Multi-tool workflows combining research and action.
 
-Each test includes basic validation assertions to verify expected outcomes and educational comments explaining AI agent testing best practices. The tests use the same tracing setup as the main application, with separate project names for clean trace separation. The tests demonstrate the robustness of the TodoItem model with title vs description distinctions, project management, varied data patterns, and multi-tool agent capabilities. See `tests/README.md` for detailed documentation.
+Each test includes validation assertions and educational comments, using the same tracing setup as the main application for clean trace separation.
 
 ---
 
@@ -137,7 +155,7 @@ You can view traces in each provider's dashboard after running the agent.
 
 ---
 
-## any.cursor Rules
+## Development Standards
 
 - Use Python 3.12+
 - Use `uv` for all dependency and environment management
