@@ -40,7 +40,7 @@ The agent has access to a suite of tools to be a proactive assistant:
 - **`read_todos`**: Lists all tasks or filters by project.
 - **`update_todo`**: Modifies an existing task (e.g., renames it or marks it as complete).
 - **`delete_todo`**: Removes a task.
-- **`web_search_preview`**: Searches the web to find information and clarify tasks. For example, if you ask it to "plan a trip," it will offer to research destinations for you.
+- **`web_search`**: Searches the web to find information and clarify tasks. For example, if you ask it to "plan a trip," it will offer to research destinations for you.
 
 ---
 
@@ -91,6 +91,29 @@ This project includes a `manage.py` script with commands to help you reset or se
     python manage.py seed
     ```
     This command uses `data/seed_todos.json` by default, but you can provide a path to a different file.
+
+## Test Suite
+
+The project includes a comprehensive test suite for automated testing and demonstration:
+
+```sh
+# Run all tests
+python tests/run_tests.py
+
+# Run individual tests
+python tests/run_tests.py basic
+python tests/run_tests.py multi
+python tests/run_tests.py complex
+python tests/run_tests.py websearch
+```
+
+The test suite includes:
+- **Basic CRUD Test**: TodoItem model robustness with varied name/description patterns, project assignment
+- **Multi-Task Workflow Test**: Bulk operations, mixed todo patterns, selective deletion, project organization
+- **Complex Editing Test**: Full TodoItem model usage, description updates, completion workflows, comprehensive CRUD operations
+- **Web Search Integration Test**: Multi-tool workflow, proactive research, converting research into actionable todos
+
+Each test includes basic validation assertions to verify expected outcomes and educational comments explaining AI agent testing best practices. The tests use the same tracing setup as the main application, with separate project names for clean trace separation. The tests demonstrate the robustness of the TodoItem model with title vs description distinctions, project management, varied data patterns, and multi-tool agent capabilities. See `tests/README.md` for detailed documentation.
 
 ---
 
