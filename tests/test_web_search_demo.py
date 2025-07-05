@@ -22,11 +22,12 @@ from datetime import datetime
 from dotenv import load_dotenv
 from phoenix.otel import register
 import weave
-from agents import Runner
+from agents import Runner, Agent
 
 # Setup imports
 sys.path.insert(0, str(Path(__file__).parent.parent))
-from agent.todo_agent import agent
+from agent.todo_agent import AGENT_PROMPT, get_tools
+from agent.storage import JsonTodoStorage
 
 
 def reset_test_data():
@@ -88,6 +89,15 @@ async def run_web_search_demo():
         os.environ["WEAVE_PRINT_CALL_LINK"] = "false"
         register(project_name="todo-agent-websearch-demo", auto_instrument=True)
         weave.init("todo-agent-websearch-demo")
+
+        # Instantiate storage and create the agent for the test run
+        storage = JsonTodoStorage()
+        agent = Agent(
+            name="To-Do Agent (Test)",
+            model="gpt-4.1-mini",
+            instructions=AGENT_PROMPT,
+            tools=get_tools(storage),
+        )
         
         print("🧪 Starting Web Search Demo")
         print("=" * 50)
@@ -118,8 +128,8 @@ async def run_web_search_demo():
         history = []
         
         # Run conversation with agent
-        for i, message in enumerate(test_messages, 1):
-            print(f"\n--- Turn {i} ---")
+        for turn, message in enumerate(test_messages):
+            print(f"\n--- Turn {turn + 1} ---")
             print(f"User: {message}")
             
             # Add user message to history
@@ -200,16 +210,17 @@ async def run_web_search_demo():
                     "name": t["name"],
                     "description": t.get("description", ""),
                     "project": t.get("project", ""),
-                    "completed": t.get("completed", False)
+                    "status": t.get("status", "Unknown")
                 } for t in travel_todos
             ]
             
             # Show organized results
             print(f"\n🗺️  Complete Travel Plan:")
             for i, todo in enumerate(travel_todos, 1):
-                status = "✅" if todo.get('completed', False) == True else "⏳"
+                status_map = {"Completed": "✅", "In Progress": "⏳", "Not Started": "⬜️"}
+                status_icon = status_map.get(todo.get('status'), '❓')
                 desc_preview = f"\n   📝 {todo['description'][:80]}..." if todo.get('description') else ""
-                print(f"{i}. {status} {todo['name']}{desc_preview}")
+                print(f"{i}. {status_icon} {todo['name']}{desc_preview}")
             
         except FileNotFoundError:
             validation_success = False
