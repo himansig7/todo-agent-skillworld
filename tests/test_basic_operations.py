@@ -5,11 +5,11 @@ Demonstrates fundamental AI agent capabilities: CRUD operations, bulk tasks, and
 This test shows:
 1. Creating todos with varied patterns (title-only vs detailed descriptions)
 2. Bulk operations (creating multiple todos at once)
-3. Project organization and management
-4. Selective deletion and updates
+3. Multi-tool workflows (read → update, read → delete)
+4. Project organization and management
 5. Basic validation to ensure the agent works correctly
 
-Perfect for AI Engineering 101 - shows core agent functionality with clear examples.
+Perfect for AI Engineering 101 - shows core agent functionality with varied tool usage patterns.
 """
 
 import os
@@ -31,7 +31,7 @@ from agent.todo_agent import agent
 
 async def run_basic_operations_test():
     """
-    Run basic todo operations test combining CRUD and workflow management.
+    Run basic todo operations test with varied tool usage patterns.
     """
     # Setup tracing (same as main.py)
     load_dotenv()
@@ -45,27 +45,29 @@ async def run_basic_operations_test():
     print("🧪 Starting Basic Operations Test")
     print("=" * 50)
     
-    # Test conversation - shows core agent capabilities
+    # Test conversation - varied tool usage patterns
     test_messages = [
-        # CRUD Operations: Create todos with different patterns
+        # Single-tool operations: Basic create
         "Add 'Buy groceries' with description 'Get milk, bread, and fresh vegetables'",
         "Add 'Walk the dog' to my list",  # Title-only
-        "Add 'Review budget' to my Work project with description 'Analyze Q4 expenses and plan for next quarter'",
         
-        # Multi-task operations: Bulk creation
-        "Add these tasks to my Personal project: 'Call mom', 'Schedule dentist appointment', and 'Plan weekend trip'",
+        # Multi-tool bulk operations: Create multiple todos with projects
+        "Add these tasks to my Work project: 'Review budget' with description 'Analyze Q4 expenses', 'Schedule team meeting', and 'Update project timeline'",
         
-        # Read operations: Show organized view
-        "Show me all my todos organized by project",
+        # Read then update workflow
+        "Show me all my Work tasks, then update the 'Schedule team meeting' task to include description 'Book conference room and send invites'",
         
-        # Update operations: Modify existing todos
-        "Update 'Walk the dog' to include description 'Take 30-minute walk in the park'",
+        # Create more variety for multi-tool operations
+        "Add these personal tasks: 'Call mom', 'Schedule dentist appointment', and 'Plan weekend trip'",
         
-        # Delete operations: Remove specific todos
-        "Delete the 'Call mom' task",
+        # Read then update multiple items
+        "Show me all my personal tasks, then mark 'Call mom' as completed and update 'Plan weekend trip' to include description 'Research destinations and book hotel'",
         
-        # Final state verification
-        "Show me my complete todo list with details"
+        # Read then delete workflow
+        "Show me all completed tasks, then delete them to clean up my list",
+        
+        # Final read to show organized results
+        "Show me my complete todo list organized by project"
     ]
     
     history = []
@@ -92,7 +94,7 @@ async def run_basic_operations_test():
     print("\n" + "=" * 50)
     print("🧪 Basic Operations Test Complete")
     
-    # Simple validation - verify the test worked
+    # Simple validation - verify varied tool usage worked
     try:
         with open("data/todos.json", "r") as f:
             todos = json.load(f)
@@ -101,42 +103,44 @@ async def run_basic_operations_test():
         
         # Check for project organization
         projects = set(t.get('project') for t in todos if t.get('project'))
-        print(f"✅ Validation: {len(projects)} projects created: {list(projects)}")
+        print(f"✅ Validation: {len(projects)} projects created: {sorted(list(projects))}")
+        
+        # Check for completion status variety
+        completed_count = len([t for t in todos if t.get('completed')])
+        pending_count = len([t for t in todos if not t.get('completed')])
+        print(f"✅ Validation: {completed_count} completed, {pending_count} pending tasks")
         
         # Check for description patterns
         with_desc = len([t for t in todos if t.get('description')])
         without_desc = len([t for t in todos if not t.get('description')])
         print(f"✅ Validation: {with_desc} todos with descriptions, {without_desc} without")
         
-        # Verify deletion worked (should NOT find deleted todo)
-        call_mom_exists = any('call mom' in t['name'].lower() for t in todos)
-        if not call_mom_exists:
-            print("✅ Validation: Deleted todo successfully removed")
-        
         # Show final organized state
-        print("\n📋 Final Todo Organization:")
+        print(f"\n📋 Final Todo Organization:")
         project_groups = {}
         for todo in todos:
-            project = todo.get('project', 'Personal Tasks')
+            project = todo.get('project', 'No Project')
             if project not in project_groups:
                 project_groups[project] = []
             project_groups[project].append(todo)
         
-        for project, project_todos in project_groups.items():
+        for project, project_todos in sorted(project_groups.items()):
             print(f"\n📂 {project}:")
             for todo in project_todos:
+                status = "✅" if todo.get('completed') else "⏳"
                 desc_preview = f" - {todo['description'][:50]}..." if todo.get('description') else ""
-                print(f"  • {todo['name']}{desc_preview}")
+                print(f"  {status} {todo['name']}{desc_preview}")
         
     except FileNotFoundError:
         print("❌ No todos.json file found")
     
-    print("\n🎓 Key Learning Points:")
-    print("• Agent handles varied todo patterns (title-only vs detailed)")
-    print("• Bulk operations work smoothly")
-    print("• Project organization keeps tasks structured")
-    print("• CRUD operations (Create, Read, Update, Delete) all functional")
-    print("• Agent maintains conversation context across multiple turns")
+    print(f"\n🎓 Key Learning Points:")
+    print("• Agent handles varied tool usage patterns (single vs multi-tool operations)")
+    print("• Multi-tool workflows: Read → Update, Read → Delete")
+    print("• Bulk operations with different complexity levels")
+    print("• Project organization and task management")
+    print("• Agent maintains context across multi-turn operations")
+    print("🔍 Check your tracing dashboard to see the varied tool call patterns!")
 
 
 if __name__ == "__main__":

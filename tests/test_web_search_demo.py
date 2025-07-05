@@ -5,11 +5,12 @@ Demonstrates how AI agents use web search to turn vague requests into actionable
 This test shows:
 1. Agent takes a general request ("plan vacation")
 2. Agent proactively offers to research destinations
-3. Agent uses web search to gather information
-4. Agent converts research into specific, actionable todos
-5. Multi-tool workflow (web search + todo management)
+3. Agent uses web search to gather information about multiple destinations
+4. Agent does detailed research for each destination (hotels, restaurants, airports)
+5. Agent converts research into specific, actionable todos
+6. Multi-turn, multi-tool workflow (web search → todo creation → organization)
 
-Perfect example of real AI agent value - transforming ambiguous requests into structured plans.
+Perfect example of real AI agent value - transforming ambiguous requests into detailed, structured plans.
 """
 
 import os
@@ -31,7 +32,7 @@ from agent.todo_agent import agent
 
 async def run_web_search_demo():
     """
-    Run web search demo showing agent's proactive research capabilities.
+    Run web search demo showing agent's multi-turn research capabilities.
     """
     # Setup tracing (same as main.py)
     load_dotenv()
@@ -44,22 +45,28 @@ async def run_web_search_demo():
     
     print("🧪 Starting Web Search Demo")
     print("=" * 50)
-    print("🎯 Goal: Watch the agent turn vague vacation ideas into actionable plans")
+    print("🎯 Goal: Watch the agent research vacation details and create actionable plans")
     print("=" * 50)
     
-    # Test conversation - demonstrates multi-tool agent workflow
+    # Test conversation - demonstrates multi-turn, multi-tool agent workflow
     test_messages = [
         # Start with vague request
         "Add 'Plan summer vacation' to my Travel project",
         
-        # Express uncertainty - trigger agent research
-        "I want to go somewhere warm with beaches but I'm not sure where. Can you help me research destinations?",
+        # Express uncertainty - trigger initial research
+        "I want to go somewhere warm with beaches in July, but I'm not sure where. Can you research some good destinations for me?",
         
-        # Ask agent to create actionable tasks from research
-        "Based on your research, add specific planning tasks for beach vacation destinations",
+        # Guide agent to pick specific destinations for detailed research
+        "Those sound great! Pick 2-3 of the most popular destinations and research specific details for each one: what hotels to stay at, good restaurants for dinner, and what airports to fly into",
         
-        # Show the organized results
-        "Show me my Travel project with all the tasks you've created"
+        # Ask agent to create specific todos based on detailed research
+        "Based on all your research, create specific planning tasks for each destination with all the details you found",
+        
+        # Create comparison tasks
+        "Now add tasks to compare these destinations: 'Compare hotel prices across destinations', 'Compare flight costs', and 'Research best time to book'",
+        
+        # Final organization
+        "Show me my complete Travel project with all the detailed tasks you've created"
     ]
     
     history = []
@@ -86,7 +93,7 @@ async def run_web_search_demo():
     print("\n" + "=" * 50)
     print("🧪 Web Search Demo Complete")
     
-    # Simple validation - verify the agent used web search effectively
+    # Validation - verify the agent used multi-tool workflow effectively
     try:
         with open("data/todos.json", "r") as f:
             todos = json.load(f)
@@ -97,29 +104,41 @@ async def run_web_search_demo():
         # Check for research-driven specificity
         detailed_todos = [
             t for t in travel_todos 
-            if t.get('description') and len(t['description']) > 30
+            if t.get('description') and len(t['description']) > 40
         ]
+        print(f"✅ Validation: {len(detailed_todos)} todos with detailed descriptions (research-driven)")
         
-        if detailed_todos:
-            print(f"✅ Validation: {len(detailed_todos)} todos with detailed descriptions (research-driven)")
-        else:
-            print("ℹ️  Note: Agent may not have used web search in this run")
+        # Check for destination-specific tasks
+        destination_tasks = [
+            t for t in travel_todos 
+            if any(keyword in t['name'].lower() for keyword in ['hotel', 'restaurant', 'flight', 'airport'])
+        ]
+        print(f"✅ Validation: {len(destination_tasks)} destination-specific tasks")
         
-        # Show what the agent created
-        print(f"\n🗺️  Travel Plan Created:")
+        # Check for comparison/planning tasks
+        planning_tasks = [
+            t for t in travel_todos 
+            if any(keyword in t['name'].lower() for keyword in ['compare', 'research', 'book'])
+        ]
+        print(f"✅ Validation: {len(planning_tasks)} planning and comparison tasks")
+        
+        # Show organized results
+        print(f"\n🗺️  Complete Travel Plan:")
         for i, todo in enumerate(travel_todos, 1):
-            desc_preview = f"\n   📝 {todo['description']}" if todo.get('description') else ""
-            print(f"{i}. {todo['name']}{desc_preview}")
+            status = "✅" if todo.get('completed') else "⏳"
+            desc_preview = f"\n   📝 {todo['description'][:80]}..." if todo.get('description') else ""
+            print(f"{i}. {status} {todo['name']}{desc_preview}")
         
     except FileNotFoundError:
         print("❌ No todos.json file found")
     
     print(f"\n🎓 Key Learning Points:")
-    print("• Agent proactively offers to research when given vague requests")
-    print("• Multi-tool workflow: web search → todo creation")
-    print("• Transforms general ideas into specific, actionable tasks")
-    print("• Shows real AI agent value beyond simple task management")
-    print("🔍 Check your tracing dashboard to see the web search API calls!")
+    print("• Agent handles multi-turn research workflow")
+    print("• Web search → detailed research → todo creation pipeline")
+    print("• Transforms vague requests into specific, actionable tasks")
+    print("• Multi-tool coordination: research then organize")
+    print("• Agent maintains context across complex research sessions")
+    print("🔍 Check your tracing dashboard to see the web search + todo creation workflow!")
 
 
 if __name__ == "__main__":
