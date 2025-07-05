@@ -7,7 +7,7 @@ and the application's data layer in `storage.py`.
 
 import json
 from typing import Optional, Any
-from pydantic import BaseModel, Field, ValidationError
+from pydantic import BaseModel, ValidationError
 from datetime import datetime, timezone
 from agents import Agent, function_tool, RunContextWrapper, WebSearchTool
 from agent.storage import TodoStorage
@@ -22,11 +22,17 @@ from agent.storage import TodoStorage
 @function_tool
 def create_todo(
     ctx: RunContextWrapper[Any],
-    name: str = Field(..., description="The name of the to-do item."),
-    description: Optional[str] = Field(default=None, description="A detailed description of the to-do item."),
-    project: Optional[str] = Field(default=None, description="A project name to group related tasks.")
+    name: str,
+    description: Optional[str] = None,
+    project: Optional[str] = None
 ) -> str:
-    """Creates a new to-do item and adds it to the list."""
+    """Creates a new to-do item and adds it to the list.
+    
+    Args:
+        name: The name of the to-do item.
+        description: A detailed description of the to-do item.
+        project: A project name to group related tasks.
+    """
     try:
         storage = TodoStorage()
         item = storage.create(name, description, project)
@@ -37,10 +43,15 @@ def create_todo(
 @function_tool
 def read_todos(
     ctx: RunContextWrapper[Any],
-    item_id: Optional[int] = Field(default=None, description="ID of a specific to-do item to read."),
-    project: Optional[str] = Field(default=None, description="Filter to-do items by a specific project.")
+    item_id: Optional[int] = None,
+    project: Optional[str] = None
 ) -> str:
-    """Reads all to-do items, or a specific item/project if an ID or project name is provided."""
+    """Reads all to-do items, or a specific item/project if an ID or project name is provided.
+    
+    Args:
+        item_id: ID of a specific to-do item to read.
+        project: Filter to-do items by a specific project.
+    """
     try:
         storage = TodoStorage()
         if item_id is not None:
@@ -61,13 +72,21 @@ def read_todos(
 @function_tool
 def update_todo(
     ctx: RunContextWrapper[Any],
-    item_id: int = Field(..., description="The ID of the to-do item to update."),
-    name: Optional[str] = Field(default=None, description="The new name of the to-do item."),
-    description: Optional[str] = Field(default=None, description="The new description of the to-do item."),
-    project: Optional[str] = Field(default=None, description="The new project name for the to-do item."),
-    completed: Optional[bool] = Field(default=None, description="The new completion status of the to-do item.")
+    item_id: int,
+    name: Optional[str] = None,
+    description: Optional[str] = None,
+    project: Optional[str] = None,
+    completed: Optional[bool] = None
 ) -> str:
-    """Updates an existing to-do item's attributes."""
+    """Updates an existing to-do item's attributes.
+    
+    Args:
+        item_id: The ID of the to-do item to update.
+        name: The new name of the to-do item.
+        description: The new description of the to-do item.
+        project: The new project name for the to-do item.
+        completed: The new completion status of the to-do item.
+    """
     try:
         storage = TodoStorage()
         update_data = {'name': name, 'description': description, 'project': project, 'completed': completed}
@@ -84,9 +103,13 @@ def update_todo(
 @function_tool
 def delete_todo(
     ctx: RunContextWrapper[Any],
-    item_id: int = Field(..., description="The ID of the to-do item to delete.")
+    item_id: int
 ) -> str:
-    """Deletes a to-do item from the list by its ID."""
+    """Deletes a to-do item from the list by its ID.
+    
+    Args:
+        item_id: The ID of the to-do item to delete.
+    """
     try:
         storage = TodoStorage()
         if storage.delete(item_id):

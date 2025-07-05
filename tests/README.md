@@ -25,10 +25,20 @@ python tests/run_demo_tests.py basic
 python tests/run_demo_tests.py websearch
 ```
 
-### Run Without Data Reset
+### Additional Options
 ```bash
 # Keep existing todos (build on current data)
 python tests/run_demo_tests.py --no-reset
+
+# Generate test report from existing logs
+python tests/run_demo_tests.py --report
+```
+
+### Direct Test Execution
+```bash
+# Run tests directly (includes data reset and logging)
+python tests/test_basic_operations.py
+python tests/test_web_search_demo.py
 ```
 
 ## 📋 What Each Demo Shows
@@ -45,6 +55,48 @@ python tests/run_demo_tests.py --no-reset
 - **Multi-tool workflow** (web search → todo creation)
 - **Value transformation** (general idea → specific actionable tasks)
 - **Real-world utility** (travel planning example)
+
+## 📊 Test Logging & Reporting
+
+Each test automatically logs structured results with:
+- **Test execution time** and duration
+- **Turn-by-turn conversation tracking**
+- **Comprehensive validation results**
+- **Pass/fail status with detailed error reporting**
+- **Automatic test report generation**
+
+### Test Logs Location
+- `tests/logs/test_results.jsonl` - Individual test results
+- `tests/logs/test_suite_results.jsonl` - Test suite summaries
+- `tests/logs/test_report.md` - Human-readable test report
+
+### Understanding Test Results
+Each test includes validation thresholds:
+- **Basic Operations**: Minimum 5 todos, 2 projects (completed tasks are deleted in test)
+- **Web Search Demo**: Minimum 5 travel todos, 2 detailed todos, 1 destination task
+
+## 🔄 Data Management
+
+### When Data Gets Reset
+- **All tests**: Each test automatically resets data before running for clean results
+- **Individual tests**: Run with fresh data every time
+- **Test suite**: Each test in the suite gets fresh data
+
+### Data Persistence
+- **During tests**: Data accumulates naturally through the test conversation
+- **After tests**: Data persists in `data/` directory for inspection
+- **Logs**: Test results and reports are preserved in `tests/logs/`
+
+### Manual Data Control
+```bash
+# Reset data manually
+python -c "
+import os, json
+os.makedirs('data', exist_ok=True)
+with open('data/todos.json', 'w') as f: json.dump([], f)
+with open('data/session_default.json', 'w') as f: json.dump({'history': []}, f)
+"
+```
 
 ## 🔍 Observability & Tracing
 
