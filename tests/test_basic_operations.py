@@ -21,11 +21,12 @@ from datetime import datetime
 from dotenv import load_dotenv
 from phoenix.otel import register
 import weave
-from agents import Runner
+from agents import Runner, Agent
 
 # Setup imports
 sys.path.insert(0, str(Path(__file__).parent.parent))
-from agent.todo_agent import agent
+from agent.todo_agent import AGENT_PROMPT, get_tools
+from agent.storage import JsonTodoStorage
 
 
 def reset_test_data():
@@ -88,6 +89,15 @@ async def run_basic_operations_test():
         register(project_name="todo-agent-test-basic", auto_instrument=True)
         weave.init("todo-agent-test-basic")
         
+        # Instantiate storage and create the agent for the test run
+        storage = JsonTodoStorage()
+        agent = Agent(
+            name="To-Do Agent (Test)",
+            model="gpt-4.1-mini",
+            instructions=AGENT_PROMPT,
+            tools=get_tools(storage),
+        )
+
         print("🧪 Starting Basic Operations Test")
         print("=" * 50)
         
@@ -95,19 +105,19 @@ async def run_basic_operations_test():
         test_messages = [
             # Single-tool operations: Basic create
             "Add 'Buy groceries' with description 'Get milk, bread, and fresh vegetables'",
-            "Add 'Walk the dog' to my list",  # Title-only
+            "Add 'Walk the dog' to my list",  # Title-only, should default to "Not Started"
             
             # Multi-tool bulk operations: Create multiple todos with projects
             "Add these tasks to my Work project: 'Review budget' with description 'Analyze Q4 expenses', 'Schedule team meeting', and 'Update project timeline'",
             
-            # Read then update workflow
-            "Show me all my Work tasks, then update the 'Schedule team meeting' task to include description 'Book conference room and send invites'",
+            # Read then update workflow, including status change
+            "Show me all my Work tasks, then update the 'Schedule team meeting' task to 'In Progress' and add description 'Book conference room and send invites'",
             
             # Create more variety for multi-tool operations
             "Add these personal tasks: 'Call mom', 'Schedule dentist appointment', and 'Plan weekend trip'",
             
             # Read then update multiple items
-            "Show me all my personal tasks, then mark 'Call mom' as completed and update 'Plan weekend trip' to include description 'Research destinations and book hotel'",
+            "Show me all my personal tasks, then mark 'Call mom' as completed and set 'Plan weekend trip' to 'In Progress' with description 'Research destinations and book hotel'",
             
             # Read then delete workflow
             "Show me all completed tasks, then delete them to clean up my list",
@@ -151,39 +161,43 @@ async def run_basic_operations_test():
             
             # Total todos validation
             total_todos = len(todos)
-            test_details["validation_results"]["total_todos"] = total_todos
-            print(f"✅ Validation: {total_todos} todos created")
+            test_details["validation_results"]["total_todos_remaining"] = total_todos
+            print(f"✅ Validation: {total_todos} todos remaining after test")
             
             # Check for project organization
             projects = set(t.get('project') for t in todos if t.get('project'))
             test_details["validation_results"]["projects"] = sorted(list(projects))
             print(f"✅ Validation: {len(projects)} projects created: {sorted(list(projects))}")
             
-            # Check for completion status variety
-            completed_count = len([t for t in todos if t.get('completed', False) == True])
-            pending_count = len([t for t in todos if t.get('completed', False) == False])
-            test_details["validation_results"]["completed_todos"] = completed_count
-            test_details["validation_results"]["pending_todos"] = pending_count
-            print(f"✅ Validation: {completed_count} completed, {pending_count} pending tasks")
+            # Check for status variety in the remaining tasks
+            status_counts = {
+                "Not Started": len([t for t in todos if t.get('status') == 'Not Started']),
+                "In Progress": len([t for t in todos if t.get('status') == 'In Progress']),
+            }
+            test_details["validation_results"]["status_counts"] = status_counts
+            print(f"✅ Validation: Status counts - {status_counts}")
             
             # Check for description patterns
             with_desc = len([t for t in todos if t.get('description')])
             without_desc = len([t for t in todos if not t.get('description')])
             test_details["validation_results"]["todos_with_descriptions"] = with_desc
             test_details["validation_results"]["todos_without_descriptions"] = without_desc
-            print(f"✅ Validation: {with_desc} todos with descriptions, {without_desc} without")
+            print(f"✅ Validation: {with_desc} with descriptions, {without_desc} without")
             
-            # Minimum thresholds for success
+            # Minimum thresholds for success. Note that completed tasks are deleted during the test.
             if total_todos < 5:
                 validation_success = False
-                test_details["errors"].append(f"Expected at least 5 todos, got {total_todos}")
+                test_details["errors"].append(f"Expected at least 5 remaining todos, got {total_todos}")
             
             if len(projects) < 2:
                 validation_success = False
                 test_details["errors"].append(f"Expected at least 2 projects, got {len(projects)}")
-            
-            # Note: We don't check for completed todos since the test includes deleting them
-            # The test successfully demonstrates the complete workflow including completion and deletion
+
+            if status_counts["In Progress"] < 2:
+                validation_success = False
+                test_details["errors"].append(f"Expected at least 2 'In Progress' todos, got {status_counts['In Progress']}")
+
+            # The test successfully demonstrates the complete workflow including completion and deletion.
             
             # Show final organized state
             print(f"\n📋 Final Todo Organization:")
@@ -197,9 +211,10 @@ async def run_basic_operations_test():
             for project, project_todos in sorted(project_groups.items()):
                 print(f"\n📂 {project}:")
                 for todo in project_todos:
-                    status = "✅" if todo.get('completed', False) == True else "⏳"
+                    status_map = {"Completed": "✅", "In Progress": "⏳", "Not Started": "⬜️"}
+                    status_icon = status_map.get(todo.get('status'), '❓')
                     desc_preview = f" - {todo['description'][:50]}..." if todo.get('description') else ""
-                    print(f"  {status} {todo['name']}{desc_preview}")
+                    print(f"  {status_icon} {todo['name']}{desc_preview}")
             
         except FileNotFoundError:
             validation_success = False
