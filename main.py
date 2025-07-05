@@ -7,13 +7,11 @@ Entry point for the todo-agent project.
 
 # Standard library imports
 import os
-import warnings
 import asyncio
 import json
 
 # Third-party imports
 from dotenv import load_dotenv
-from pydantic.json_schema import PydanticJsonSchemaWarning
 from phoenix.otel import register
 import weave
 from agents import Runner
@@ -23,9 +21,6 @@ from agent.todo_agent import agent
 
 # --- Initial Setup ---
 load_dotenv()
-
-# Suppress harmless Pydantic warnings for a cleaner console experience.
-warnings.filterwarnings("ignore", category=PydanticJsonSchemaWarning)
 
 # --- Tracing & Observation Setup ---
 # Initialize integrations for OpenAI, Arize Phoenix, and Weave to observe agent behavior.

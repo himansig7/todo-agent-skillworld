@@ -134,5 +134,8 @@ cython_debug/
 data/todos.json
 data/session_default.json
 
+# Test logs and reports
+tests/logs/
+
 # Cursor editor files
 .cursor/
