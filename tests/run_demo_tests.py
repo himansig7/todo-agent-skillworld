@@ -1,8 +1,6 @@
 """
 Test Runner for Todo Agent Demos
-
 Runs the AI agent demonstration tests with structured logging and reporting.
-Perfect for AI Engineering 101 - comprehensive test management.
 """
 
 import os
@@ -20,11 +18,9 @@ def reset_data():
     """Reset todos and session data for clean test runs."""
     os.makedirs("data", exist_ok=True)
     
-    # Reset todos.json
     with open("data/todos.json", "w") as f:
         json.dump([], f)
     
-    # Reset session history
     with open("data/session_default.json", "w") as f:
         json.dump({"history": []}, f)
     
@@ -45,7 +41,6 @@ def log_test_suite_result(suite_name, start_time, end_time, results, summary):
         "summary": summary
     }
     
-    # Append to log file
     log_file = "tests/logs/test_suite_results.jsonl"
     with open(log_file, "a") as f:
         f.write(json.dumps(result) + "\n")
@@ -66,7 +61,6 @@ def generate_test_report():
     report_content.append("# Todo Agent Test Report\n")
     report_content.append(f"Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
     
-    # Read individual test results
     with open(log_file, "r") as f:
         test_results = [json.loads(line) for line in f]
     
@@ -77,7 +71,6 @@ def generate_test_report():
         if test_name not in latest_results or result["timestamp"] > latest_results[test_name]["timestamp"]:
             latest_results[test_name] = result
     
-    # Generate report
     report_content.append("## Test Results Summary\n")
     
     passed = 0
@@ -98,7 +91,6 @@ def generate_test_report():
             failed += 1
             report_content.append(f"- **Errors**: {', '.join(result['details']['errors'])}\n")
         
-        # Validation results
         if result["details"]["validation_results"]:
             report_content.append("- **Validation Results**:\n")
             for key, value in result["details"]["validation_results"].items():
@@ -106,7 +98,6 @@ def generate_test_report():
         
         report_content.append("\n")
     
-    # Overall summary
     total = passed + failed
     report_content.append(f"## Overall Summary\n")
     report_content.append(f"- **Total Tests**: {total}\n")
@@ -114,7 +105,6 @@ def generate_test_report():
     report_content.append(f"- **Failed**: {failed}\n")
     report_content.append(f"- **Success Rate**: {(passed/total*100):.1f}%\n")
     
-    # Read suite results if available
     if os.path.exists(suite_log_file):
         with open(suite_log_file, "r") as f:
             suite_results = [json.loads(line) for line in f]
@@ -126,7 +116,6 @@ def generate_test_report():
             report_content.append(f"- **Duration**: {latest_suite['duration_seconds']:.2f}s\n")
             report_content.append(f"- **Summary**: {latest_suite['summary']}\n")
     
-    # Write report
     report_file = "tests/logs/test_report.md"
     with open(report_file, "w") as f:
         f.write("".join(report_content))
@@ -172,7 +161,6 @@ async def run_all_tests():
     results = []
     
     for test_name, test_description in tests:
-        # Each test handles its own data reset
         try:
             success = await run_test(test_name)
             results.append({
@@ -195,13 +183,10 @@ async def run_all_tests():
                 "error": str(e)
             })
         
-        # Shutdown the tracer provider to allow for re-initialization in the next test
+        # Shutdown tracer for re-initialization
         trace.get_tracer_provider().shutdown()
-        
-        # Small delay between tests
         await asyncio.sleep(1)
     
-    # Suite summary
     suite_end_time = datetime.now()
     passed = sum(1 for r in results if r["success"])
     total = len(results)
@@ -225,7 +210,6 @@ async def run_all_tests():
     print(f"\n📈 Overall: {passed}/{total} demos completed successfully")
     print(f"🎯 Success Rate: {suite_summary['success_rate']:.1f}%")
     
-    # Log suite results
     log_test_suite_result("all_demos", suite_start_time, suite_end_time, results, suite_summary)
     
     if passed == total:
@@ -233,7 +217,6 @@ async def run_all_tests():
     else:
         print("\n🔧 Some demos had issues - check the logs for details.")
         
-    # Generate test report
     generate_test_report()
     
     return passed == total
@@ -262,20 +245,15 @@ async def main():
     
     args = parser.parse_args()
     
-    # Generate report only
     if args.report:
         generate_test_report()
         return
     
-    # Run the requested test(s)
     if args.test == "all":
         success = await run_all_tests()
     else:
-        # Note: Individual tests now handle their own data reset
-        # The --no-reset flag would need to be passed to the test functions
         success = await run_test(args.test)
     
-    # Exit with appropriate code
     exit(0 if success else 1)
 
 
