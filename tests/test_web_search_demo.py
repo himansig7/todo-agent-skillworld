@@ -87,8 +87,8 @@ async def run_web_search_demo():
         
         os.environ["OPENAI_TRACING_ENABLED"] = "1"
         os.environ["WEAVE_PRINT_CALL_LINK"] = "false"
-        register(project_name="todo-agent-websearch-demo", auto_instrument=True)
-        weave.init("todo-agent-websearch-demo")
+        register(project_name="todo-agent-test-websearch", auto_instrument=True)
+        weave.init("todo-agent-test-websearch")
 
         # Instantiate storage and create the agent for the test run
         storage = JsonTodoStorage()

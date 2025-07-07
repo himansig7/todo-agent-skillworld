@@ -28,23 +28,23 @@ from agent.storage import InMemoryTodoStorage, TodoStatus
 # sessions are logged to a single, static Weave project for easier aggregation.
 def initialize_tracing():
     """Initializes Phoenix and Weave tracing for the application."""
-    # Phoenix can handle dynamic project names better for session isolation.
-    # Weave will use a single project to avoid auth/creation issues in a serverless context.
-    session_id = str(uuid.uuid4())[:8]
-    project_name_phoenix = f"todo-gradio-phoenix-{session_id}"
-    project_name_weave = "todo-agent-gradio"  # Static project name for Weave
+    # Both Phoenix and Weave will use a single, static project name.
+    # We can use session IDs or other metadata to filter runs within the project.
+    project_name = "todo-agent-gradio"
 
     os.environ["OPENAI_TRACING_ENABLED"] = "1"
-    os.environ["WEAVE_PRINT_CALL_LINK"] = "false" # Keep the console clean
-    
+    os.environ["WEAVE_PRINT_CALL_LINK"] = "false"  # Keep the console clean
+
     # Check if tracing is already initialized to prevent errors on hot-reload
     if not weave.get_client():
         try:
-            register(project_name=project_name_phoenix, auto_instrument=True)
-            weave.init(project_name=project_name_weave)
-            print(f"Tracing initialized for Weave project '{project_name_weave}' and Phoenix session '{session_id}'")
+            register(project_name=project_name, auto_instrument=True)
+            weave.init(project_name=project_name)
+            print(f"Tracing initialized for project: '{project_name}'")
         except Exception as e:
-            print(f"Warning: Tracing initialization failed. The app will work, but traces will not be captured. Error: {e}")
+            print(
+                f"Warning: Tracing initialization failed. The app will work, but traces will not be captured. Error: {e}"
+            )
 
 initialize_tracing()
 
