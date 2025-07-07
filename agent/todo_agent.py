@@ -1,8 +1,7 @@
 """
-This file defines the agent's identity, instructions, and available tools.
+Agent identity, instructions, and tools.
 
-The tools defined here act as the bridge between the agent's reasoning
-and the application's data layer in `storage.py`.
+Tools bridge agent reasoning with the data layer in storage.py.
 """
 
 import json
@@ -10,12 +9,11 @@ from typing import Optional, Any
 from agents import Agent, function_tool, WebSearchTool
 from agent.storage import AbstractTodoStorage, JsonTodoStorage, TodoStatus
 
-# -----------------------------------------------------------------------------
+# =============================================================================
 # Tool Definitions
-# -----------------------------------------------------------------------------
-# This factory uses a closure to "bake in" the storage dependency, a key
-# pattern for stateful agents. It keeps the tool signature clean for the LLM,
-# which cannot handle complex objects as arguments.
+# =============================================================================
+
+# Factory uses closure to inject storage dependency, keeping tool signatures clean for LLM
 def get_tools(storage: AbstractTodoStorage):
     """Factory to create tool functions with a specific storage backend."""
 
@@ -25,16 +23,15 @@ def get_tools(storage: AbstractTodoStorage):
         description: Optional[str] = None,
         project: Optional[str] = None
     ) -> str:
-        """Creates a new to-do item and adds it to the list.
+        """Creates a new to-do item.
         
-        Use this tool when users ask to add, create, or remember tasks.
-        Be proactive about organizing tasks into projects - if you see related tasks,
-        suggest grouping them together.
+        Use when users ask to add, create, or remember tasks.
+        Be proactive about organizing tasks into projects.
         
         Args:
-            name: Brief, clear task title (e.g., "Buy groceries", "Call dentist")
-            description: Optional details or subtasks (e.g., "Milk, bread, eggs")
-            project: Optional project/category for organization (e.g., "Shopping", "Health")
+            name: Brief, clear task title
+            description: Optional details or subtasks
+            project: Optional project/category for organization
         
         Returns:
             Confirmation message with the created item's ID and details.
@@ -52,9 +49,8 @@ def get_tools(storage: AbstractTodoStorage):
     ) -> str:
         """Reads all to-do items, or filters by ID/project.
         
-        Flexible reading tool - use without parameters to see everything,
-        or filter to find specific items. Always check the list before
-        updating or deleting items to ensure you have the correct ID.
+        Use without parameters to see everything, or filter to find specific items.
+        Always check the list before updating or deleting items.
         
         Args:
             item_id: Optional - specific todo item ID to retrieve
@@ -72,11 +68,9 @@ def get_tools(storage: AbstractTodoStorage):
                 project_todos = storage.read_by_project(project)
                 if not project_todos:
                     return f"No to-do items found for project '{project}'."
-                # Return a nicely formatted JSON array for readability
                 return '[\n' + ',\n'.join([t.model_dump_json(indent=2) for t in project_todos]) + '\n]'
             
             all_todos = storage.read_all()
-            # Return a nicely formatted JSON array for readability
             return '[\n' + ',\n'.join([t.model_dump_json(indent=2) for t in all_todos]) + '\n]'
         except Exception as e:
             return f"Error reading to-dos: {e}"
@@ -91,9 +85,8 @@ def get_tools(storage: AbstractTodoStorage):
     ) -> str:
         """Updates an existing to-do item's attributes.
         
-        Use this to modify tasks or mark them complete. Pay attention to user's
-        language - past tense ("I finished X") usually means update status to "Completed".
-        Present/future tense ("change X to Y") means update the task details.
+        Use to modify tasks or mark them complete. Pay attention to user's
+        language - past tense usually means update status to "Completed".
         
         Args:
             item_id: The ID of the to-do item to update (required)
@@ -106,13 +99,11 @@ def get_tools(storage: AbstractTodoStorage):
             Confirmation of update or error message if item not found.
         """
         try:
-            # Validate the status field against the allowed enum values.
-            # This provides a clear error to the agent if it hallucinates an invalid status.
+            # Validate status against enum values to prevent hallucination
             if status and status not in [s.value for s in TodoStatus]:
                 return f"Error: Invalid status '{status}'. Please use one of: {[s.value for s in TodoStatus]}."
 
             update_data = {'name': name, 'description': description, 'project': project, 'status': status}
-            # Filter out fields that were not provided by the user.
             update_fields = {k: v for k, v in update_data.items() if v is not None}
 
             if not update_fields:
@@ -129,9 +120,8 @@ def get_tools(storage: AbstractTodoStorage):
     ) -> str:
         """Deletes a to-do item from the list by its ID.
         
-        Use this to remove completed or cancelled tasks. Best practice:
-        always confirm with the user before deleting, and consider
-        marking as "Completed" instead if the task was finished.
+        Use to remove completed or cancelled tasks. Best practice:
+        always confirm with the user before deleting.
         
         Args:
             item_id: The ID of the to-do item to delete (required)
@@ -149,9 +139,10 @@ def get_tools(storage: AbstractTodoStorage):
 
     return [create_todo, read_todos, update_todo, delete_todo, WebSearchTool()]
 
-# -----------------------------------------------------------------------------
-# Agent Prompt & Default Agent
-# -----------------------------------------------------------------------------
+# =============================================================================
+# Agent Configuration
+# =============================================================================
+
 AGENT_PROMPT = """
 You are a professional Executive Assistant. Your sole responsibility is to manage the user's to-do list with precision and initiative.
 
@@ -205,17 +196,18 @@ You also have a `web_search` tool for research. Use it proactively to help the u
 Your objective is to be a proactive partner who adds value, not just a passive note-taker.
 """
 
-# -----------------------------------------------------------------------------
+# =============================================================================
 # Agent Factory
-# -----------------------------------------------------------------------------
+# =============================================================================
+
 def create_agent(
     storage: AbstractTodoStorage,
     agent_name: str = "To-Do Agent"
 ):
-    """
-    Factory function to create a new instance of the To-Do Agent.
-    This centralizes the agent's configuration and makes it easy to create
-    consistent agent instances for different parts of the application.
+    """Factory function to create a new To-Do Agent instance.
+    
+    This centralizes agent configuration and makes it easy to create
+    consistent instances across different parts of the application.
 
     Args:
         storage: An instance of a storage class (e.g., JsonTodoStorage).
@@ -228,6 +220,5 @@ def create_agent(
         tools=get_tools(storage),
     )
 
-# A default agent is created here for simplicity of import.
-# This instance uses the file-based storage, suitable for the main CLI.
+# Default agent instance using file-based storage for CLI usage
 agent = create_agent(JsonTodoStorage()) 
