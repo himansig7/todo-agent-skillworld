@@ -25,7 +25,20 @@ def get_tools(storage: AbstractTodoStorage):
         description: Optional[str] = None,
         project: Optional[str] = None
     ) -> str:
-        """Creates a new to-do item and adds it to the list."""
+        """Creates a new to-do item and adds it to the list.
+        
+        Use this tool when users ask to add, create, or remember tasks.
+        Be proactive about organizing tasks into projects - if you see related tasks,
+        suggest grouping them together.
+        
+        Args:
+            name: Brief, clear task title (e.g., "Buy groceries", "Call dentist")
+            description: Optional details or subtasks (e.g., "Milk, bread, eggs")
+            project: Optional project/category for organization (e.g., "Shopping", "Health")
+        
+        Returns:
+            Confirmation message with the created item's ID and details.
+        """
         try:
             item = storage.create(name, description, project)
             return f"Created to-do item {item.id} ('{item.name}') in project '{item.project or 'None'}' with status '{item.status.value}'."
@@ -37,7 +50,19 @@ def get_tools(storage: AbstractTodoStorage):
         item_id: Optional[int] = None,
         project: Optional[str] = None
     ) -> str:
-        """Reads all to-do items, or a specific item/project if an ID or project name is provided."""
+        """Reads all to-do items, or filters by ID/project.
+        
+        Flexible reading tool - use without parameters to see everything,
+        or filter to find specific items. Always check the list before
+        updating or deleting items to ensure you have the correct ID.
+        
+        Args:
+            item_id: Optional - specific todo item ID to retrieve
+            project: Optional - filter by project name (case-insensitive)
+        
+        Returns:
+            JSON formatted list of todos or specific todo details.
+        """
         try:
             if item_id is not None:
                 item = storage.read_by_id(item_id)
@@ -66,12 +91,19 @@ def get_tools(storage: AbstractTodoStorage):
     ) -> str:
         """Updates an existing to-do item's attributes.
         
+        Use this to modify tasks or mark them complete. Pay attention to user's
+        language - past tense ("I finished X") usually means update status to "Completed".
+        Present/future tense ("change X to Y") means update the task details.
+        
         Args:
-            item_id: The ID of the to-do item to update.
-            name: The new name of the to-do item.
-            description: The new description of the to-do item.
-            project: The new project name for the to-do item.
-            status: The new status. Must be one of: "Not Started", "In Progress", "Completed".
+            item_id: The ID of the to-do item to update (required)
+            name: The new name of the to-do item
+            description: The new description of the to-do item
+            project: The new project name for the to-do item
+            status: The new status. Must be one of: "Not Started", "In Progress", "Completed"
+        
+        Returns:
+            Confirmation of update or error message if item not found.
         """
         try:
             # Validate the status field against the allowed enum values.
@@ -95,7 +127,18 @@ def get_tools(storage: AbstractTodoStorage):
     def delete_todo(
         item_id: int
     ) -> str:
-        """Deletes a to-do item from the list by its ID."""
+        """Deletes a to-do item from the list by its ID.
+        
+        Use this to remove completed or cancelled tasks. Best practice:
+        always confirm with the user before deleting, and consider
+        marking as "Completed" instead if the task was finished.
+        
+        Args:
+            item_id: The ID of the to-do item to delete (required)
+            
+        Returns:
+            Confirmation of deletion or error if item not found.
+        """
         try:
             if storage.delete(item_id):
                 return f"Deleted to-do item {item_id}."
@@ -120,6 +163,17 @@ You have a set of office supplies (tools) to manage the to-do list:
 
 You also have a `web_search` tool for research. Use it proactively to help the user clarify vague tasks. Your goal is to turn ambiguous requests into actionable to-do items.
 
+**Your Capabilities & Boundaries:**
+- Primary focus: Managing and organizing the user's to-do list
+- Supporting capabilities: Use web search, basic math, and logical reasoning to help users create better, more actionable tasks
+- Always ground your help in task creation or organization - if a user asks something unrelated, acknowledge it briefly then guide them back to their task list
+
+**Communication Principles:**
+- Be concise but thorough - provide the right amount of detail for the task
+- Confirm actions before asking follow-ups: "I've added X to your list. Would you like..."
+- Use formatting for clarity (bullets for lists, bold for emphasis)
+- Show your reasoning when it helps: "Based on my research, I suggest breaking this into 3 tasks..."
+
 **Your Professional Workflow:**
 - When a user adds tasks, think about how they could be grouped. If a user adds "Buy milk" and later "Buy bread," assign both to a "Groceries" project. Be proactive in organizing the user's life.
 - When a user gives a vague task (e.g., "plan a trip"), don't just add it. Confirm the entry, then immediately offer to perform web research to gather necessary details.
@@ -131,6 +185,11 @@ You also have a `web_search` tool for research. Use it proactively to help the u
 - If the user uses past-tense language (e.g., "I just finished the report," "I already bought the groceries," "I joined the gym"), it's a strong signal that the task is complete. First, find the relevant task ID, then confirm with the user before calling `update_todo` with `status='Completed'`.
 - If the user describes a change to the task's requirements (e.g., "add X to the shopping list," "change the meeting to 3 PM"), update the task's name or description using `update_todo`.
 
+**When Things Go Wrong:**
+- If a tool operation fails, explain clearly and suggest alternatives
+- If you can't find a todo item, offer to show the full list or search by keywords
+- If web search returns no results, acknowledge this and ask for clarification
+
 **Example Interaction Flow:**
 - **User**: "Add 'plan my trip' to my list."
 - **Assistant**: (Calls `create_todo` with name="plan my trip"). "Of course. I've added 'plan my trip' to your list. To make this more actionable, may I research potential destinations for you?"
@@ -138,6 +197,10 @@ You also have a `web_search` tool for research. Use it proactively to help the u
 - **Assistant**: (Calls `web_search`). "My research shows that popular warm destinations in December include Hawaii, Mexico, and the Caribbean. Do any of these appeal to you?"
 - **User**: "Mexico sounds great."
 - **Assistant**: "Excellent. I will update the task to 'Plan trip to Mexico'." (Calls `update_todo` to change name). "Shall I also add 'Book flights to Mexico' and 'Book hotel in Mexico' to your to-do list?"
+
+**Example - Using Math for Better Tasks:**
+- **User**: "I need to save money for a $3,000 vacation in 10 months"
+- **Assistant**: "Let me help you plan this. You'll need to save $300/month to reach $3,000 in 10 months. I'll create a task 'Set aside $300 for vacation fund' with a monthly recurrence. Would you also like me to research ways to reduce expenses or find side income opportunities?"
 
 Your objective is to be a proactive partner who adds value, not just a passive note-taker.
 """
