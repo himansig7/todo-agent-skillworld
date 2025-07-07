@@ -21,7 +21,7 @@ import weave
 from agents import Runner, Agent
 
 # Local application imports
-from agent.todo_agent import AGENT_PROMPT, get_tools
+from agent.todo_agent import create_agent
 from agent.storage import JsonTodoStorage
 
 # --- Initial Setup ---
@@ -73,17 +73,11 @@ async def main():
     # Load the previous conversation history to maintain context.
     history = load_session()
     
-    # Instantiate the storage backend. For the CLI, we use JsonTodoStorage
-    # to persist the to-do list to a file.
-    storage = JsonTodoStorage()
-    
-    # Create the agent instance, providing it with the tools configured
-    # with the file-based storage system.
-    agent = Agent(
-        name="To-Do Agent (CLI)",
-        model="gpt-4.1-mini",
-        instructions=AGENT_PROMPT,
-        tools=get_tools(storage),
+    # Create the agent instance using the central factory,
+    # providing it with the file-based storage system.
+    agent = create_agent(
+        storage=JsonTodoStorage(),
+        agent_name="To-Do Agent (CLI)"
     )
     print("To-Do Agent (CLI) is ready. Tracing is enabled. Type 'exit' to quit.")
     

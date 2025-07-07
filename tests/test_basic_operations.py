@@ -25,7 +25,7 @@ from agents import Runner, Agent
 
 # Setup imports
 sys.path.insert(0, str(Path(__file__).parent.parent))
-from agent.todo_agent import AGENT_PROMPT, get_tools
+from agent.todo_agent import create_agent
 from agent.storage import JsonTodoStorage
 
 
@@ -89,14 +89,8 @@ async def run_basic_operations_test():
         register(project_name="todo-agent-test-basic", auto_instrument=True)
         weave.init("todo-agent-test-basic")
         
-        # Instantiate storage and create the agent for the test run
-        storage = JsonTodoStorage()
-        agent = Agent(
-            name="To-Do Agent (Test)",
-            model="gpt-4.1-mini",
-            instructions=AGENT_PROMPT,
-            tools=get_tools(storage),
-        )
+        # Instantiate the agent using the central factory
+        agent = create_agent(agent_name="To-Do Agent (Basic Ops Test)")
 
         print("🧪 Starting Basic Operations Test")
         print("=" * 50)

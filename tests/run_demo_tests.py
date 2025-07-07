@@ -13,6 +13,7 @@ from datetime import datetime
 from pathlib import Path
 from test_basic_operations import run_basic_operations_test
 from test_web_search_demo import run_web_search_demo
+from opentelemetry import trace
 
 
 def reset_data():
@@ -193,6 +194,9 @@ async def run_all_tests():
                 "success": False,
                 "error": str(e)
             })
+        
+        # Shutdown the tracer provider to allow for re-initialization in the next test
+        trace.get_tracer_provider().shutdown()
         
         # Small delay between tests
         await asyncio.sleep(1)

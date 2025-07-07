@@ -137,12 +137,29 @@ You also have a `web_search` tool for research. Use it proactively to help the u
 Your objective is to be a proactive partner who adds value, not just a passive note-taker.
 """
 
-# A default agent is created here for simplicity of import. In a real application,
-# it's better practice to explicitly create an agent instance with the
-# correct storage backend (e.g., `JsonTodoStorage` for CLI, `InMemory...` for web).
-agent = Agent(
-    name="To-Do Agent",
-    model="gpt-4.1-mini",
-    instructions=AGENT_PROMPT,
-    tools=get_tools(JsonTodoStorage()),
-) 
+# -----------------------------------------------------------------------------
+# Agent Factory
+# -----------------------------------------------------------------------------
+def create_agent(
+    storage: AbstractTodoStorage,
+    agent_name: str = "To-Do Agent"
+):
+    """
+    Factory function to create a new instance of the To-Do Agent.
+    This centralizes the agent's configuration and makes it easy to create
+    consistent agent instances for different parts of the application.
+
+    Args:
+        storage: An instance of a storage class (e.g., JsonTodoStorage).
+        agent_name: The name for the agent instance.
+    """
+    return Agent(
+        name=agent_name,
+        model="gpt-4.1-mini",
+        instructions=AGENT_PROMPT,
+        tools=get_tools(storage),
+    )
+
+# A default agent is created here for simplicity of import.
+# This instance uses the file-based storage, suitable for the main CLI.
+agent = create_agent(JsonTodoStorage()) 

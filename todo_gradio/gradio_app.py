@@ -19,7 +19,7 @@ import weave
 # which is a common pattern in Python applications to resolve modules.
 import sys
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-from agent.todo_agent import AGENT_PROMPT, get_tools
+from agent.todo_agent import create_agent
 from agent.storage import InMemoryTodoStorage, TodoStatus
 
 # 2. Tracing Setup
@@ -93,11 +93,9 @@ async def agent_chat(user_input: str, chat_history: list, storage_instance: InMe
     chat_history.append({"role": "user", "content": user_input})
     
     # Create a new, stateless agent for each turn, configured with the session's storage.
-    agent = Agent(
-        name="To-Do Agent (Gradio)",
-        model="gpt-4.1-mini",
-        instructions=AGENT_PROMPT,
-        tools=get_tools(storage_instance), # Critically, we pass the session's in-memory storage
+    agent = create_agent(
+        storage=storage_instance,
+        agent_name="To-Do Agent (Gradio)"
     )
 
     # Use the Runner to execute the agent with the latest chat history
