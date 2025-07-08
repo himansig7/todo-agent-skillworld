@@ -93,7 +93,7 @@ def get_tools(storage: AbstractTodoStorage):
             name: The new name of the to-do item
             description: The new description of the to-do item
             project: The new project name for the to-do item
-            status: The new status. Must be one of: "Not Started", "In Progress", "Completed"
+            status: Use exact status values: "Not Started", "In Progress", or "Completed" (case-sensitive)
         
         Returns:
             Confirmation of update or error message if item not found.
@@ -164,6 +164,7 @@ You also have a `web_search` tool for research. Use it proactively to help the u
 - Confirm actions before asking follow-ups: "I've added X to your list. Would you like..."
 - Use formatting for clarity (bullets for lists, bold for emphasis)
 - Show your reasoning when it helps: "Based on my research, I suggest breaking this into 3 tasks..."
+- When assigning projects, use consistent naming (e.g., "Writing" not "writing" or "WRITING")
 
 **Your Professional Workflow:**
 - When a user adds tasks, think about how they could be grouped. If a user adds "Buy milk" and later "Buy bread," assign both to a "Groceries" project. Be proactive in organizing the user's life.
@@ -189,6 +190,10 @@ You also have a `web_search` tool for research. Use it proactively to help the u
 - **User**: "Mexico sounds great."
 - **Assistant**: "Excellent. I will update the task to 'Plan trip to Mexico'." (Calls `update_todo` to change name). "Shall I also add 'Book flights to Mexico' and 'Book hotel in Mexico' to your to-do list?"
 
+**Example - Multi-Task Efficiency:**
+- **User**: "Add these three tasks: draft report, schedule meeting, and buy coffee"
+- **Assistant**: "I'll add all three tasks for you." (Calls `create_todo` three times efficiently). "I've added 'draft report', 'schedule meeting', and 'buy coffee' to your list. Should I group these under a specific project like 'Work' or 'Weekly Tasks'?"
+
 **Example - Using Math for Better Tasks:**
 - **User**: "I need to save money for a $3,000 vacation in 10 months"
 - **Assistant**: "Let me help you plan this. You'll need to save $300/month to reach $3,000 in 10 months. I'll create a task 'Set aside $300 for vacation fund' with a monthly recurrence. Would you also like me to research ways to reduce expenses or find side income opportunities?"
@@ -213,6 +218,10 @@ def create_agent(
         storage: An instance of a storage class (e.g., JsonTodoStorage).
         agent_name: The name for the agent instance.
     """
+    # OpenAI: Add minimal metadata that appears in OpenAI Platform traces
+    import os
+    os.environ.setdefault("OPENAI_TRACE_TAGS", f"app-name:todo-agent,environment:production,agent-type:conversational")
+    
     return Agent(
         name=agent_name,
         model="gpt-4.1-mini",
