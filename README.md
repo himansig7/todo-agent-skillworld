@@ -87,13 +87,13 @@ You can run the agent in two ways:
 
 This is the recommended way to use the agent.
 ```sh
-python todo_gradio/gradio_app.py
+uv run todo_gradio/gradio_app.py
 ```
 The app will be available at a local URL (e.g., `http://127.0.0.1:7860`).
 
 ### 2. Command-Line Interface (CLI)
 ```sh
-python main.py
+uv run main.py
 ```
 - Interact with the agent in natural language.
 - Type `exit` or `quit` to end the session.
@@ -106,11 +106,11 @@ This project includes a `manage.py` script with commands to help you reset or se
 
 -   **Resetting Data**: To clear all to-do items and conversation history, run:
     ```sh
-    python manage.py reset --yes
+    uv run manage.py reset --yes
     ```
 -   **Seeding Data**: To load a specific set of to-dos for a test, run:
     ```sh
-    python manage.py seed
+    uv run manage.py seed
     ```
     This command uses `data/seed_todos.json` by default, but you can provide a path to a different file.
 
@@ -120,11 +120,11 @@ The project includes a comprehensive test suite for automated testing and demons
 
 ```sh
 # Run all demo tests
-python tests/run_demo_tests.py all
+uv run tests/run_demo_tests.py all
 
 # Run individual demos
-python tests/run_demo_tests.py basic
-python tests/run_demo_tests.py websearch
+uv run tests/run_demo_tests.py basic
+uv run tests/run_demo_tests.py websearch
 ```
 
 The test suite demonstrates:
@@ -140,7 +140,7 @@ Each test includes minimal validation and educational comments, using the same t
 The `data/` directory holds both user-generated data and example data:
 
 - **`todos.json` & `session_default.json`**: These files are created automatically when you first run the app. They are listed in the `.gitignore` file, so your local conversation history and to-do items will not be committed to the repository.
-- **`seed_todos.json`**: This file is included in the repository and provides a default set of to-dos that you can load using the `python manage.py seed` command. It serves as a good starting point for testing.
+- **`seed_todos.json`**: This file is included in the repository and provides a default set of to-dos that you can load using the `uv run manage.py seed` command. It serves as a good starting point for testing.
 
 ---
 
