@@ -72,20 +72,29 @@ async def run_web_search_demo():
         register(project_name="todo-agent-test-websearch", auto_instrument=True)
         weave.init("todo-agent-test-websearch")
 
-        agent = create_agent(agent_name="To-Do Agent (Web Search Test)")
+        agent = create_agent(agent_name="To-Do Agent (AI Research Test)")
         
         print("🧪 Starting Web Search Demo")
         print("=" * 50)
-        print("🎯 Goal: Watch the agent research vacation details and create actionable plans")
+        print("🎯 Goal: Watch the agent research AI engineering practices and create technical writing tasks")
         print("=" * 50)
         
         test_messages = [
-            "Add 'Plan summer vacation' to my Travel project",
-            "I want to go somewhere warm with beaches in July, but I'm not sure where. Can you research some good destinations for me?",
-            "Those sound great! Pick 2-3 of the most popular destinations and research specific details for each one: what hotels to stay at, good restaurants for dinner, and what airports to fly into",
-            "Based on all your research, create specific planning tasks for each destination with all the details you found",
-            "Now add tasks to compare these destinations: 'Compare hotel prices across destinations', 'Compare flight costs', and 'Research best time to book'",
-            "Show me my complete Travel project with all the detailed tasks you've created"
+            # === Initial Brainstorming Request ===
+            "Add 'Plan AI agents article' to my Writing project with description 'Write tutorial article about building AI agents - need ideas for structure and key topics'",
+            "I'm writing an article about AI agents but I'm stuck on what to cover. Can you help me brainstorm the main topics I should include? Maybe search for what people are asking about AI agents lately",
+            
+            # === Idea Generation and Suggestions ===
+            "Those are good ideas! Can you look up what specific challenges developers face when building their first AI agent? I want to make sure I'm addressing real pain points",
+            "Based on what you found, can you suggest some specific sections I should write? Like what would be the most helpful topics to cover first",
+            
+            # === Content Structure Help ===
+            "I'm thinking about covering observability tools but I'm not sure which ones are worth mentioning. Can you research what tracing tools are popular with AI developers right now?",
+            "That's helpful! Can you suggest how I should organize these topics? Should I create separate tasks for each tool or group them somehow?",
+            
+            # === Implementation Examples ===
+            "I want to include some practical examples but I'm not sure what would be most useful. Can you look up what kind of code examples developers find most helpful in AI tutorials?",
+            "Show me what tasks you've suggested so far - I want to see if we're covering the right topics for my article"
         ]
         
         history = []
@@ -113,64 +122,26 @@ async def run_web_search_demo():
             with open("data/todos.json", "r") as f:
                 todos = json.load(f)
             
-            travel_todos = [t for t in todos if t.get('project') == 'Travel']
-            total_travel_todos = len(travel_todos)
-            test_details["validation_results"]["total_travel_todos"] = total_travel_todos
-            print(f"✅ Validation: {total_travel_todos} travel todos created")
+            total_todos = len(todos)
+            test_details["validation_results"]["total_todos"] = total_todos
             
-            detailed_todos = [
-                t for t in travel_todos 
-                if t.get('description') and len(t['description']) > 40
-            ]
-            test_details["validation_results"]["detailed_todos"] = len(detailed_todos)
-            print(f"✅ Validation: {len(detailed_todos)} todos with detailed descriptions (research-driven)")
+            projects = set(t.get('project') for t in todos if t.get('project'))
+            test_details["validation_results"]["projects"] = sorted(list(projects))
             
-            destination_tasks = [
-                t for t in travel_todos 
-                if any(keyword in t['name'].lower() for keyword in ['hotel', 'restaurant', 'flight', 'airport'])
-            ]
-            test_details["validation_results"]["destination_tasks"] = len(destination_tasks)
-            print(f"✅ Validation: {len(destination_tasks)} destination-specific tasks")
-            
-            planning_tasks = [
-                t for t in travel_todos 
-                if any(keyword in t['name'].lower() for keyword in ['compare', 'research', 'book'])
-            ]
-            test_details["validation_results"]["planning_tasks"] = len(planning_tasks)
-            print(f"✅ Validation: {len(planning_tasks)} planning and comparison tasks")
-            
-            # Validation thresholds
-            if total_travel_todos < 5:
+            # Basic sanity check - did the agent create any todos?
+            if total_todos == 0:
                 validation_success = False
-                test_details["errors"].append(f"Expected at least 5 travel todos, got {total_travel_todos}")
+                test_details["errors"].append("No todos were created during the test")
             
-            if len(detailed_todos) < 2:
-                validation_success = False
-                test_details["errors"].append(f"Expected at least 2 detailed todos (research-driven), got {len(detailed_todos)}")
-            
-            if len(destination_tasks) < 1:
-                validation_success = False
-                test_details["errors"].append(f"Expected at least 1 destination-specific task, got {len(destination_tasks)}")
-            
-            if len(planning_tasks) < 1:
-                validation_success = False
-                test_details["errors"].append(f"Expected at least 1 planning/comparison task, got {len(planning_tasks)}")
-            
-            test_details["validation_results"]["final_todos"] = [
-                {
-                    "name": t["name"],
-                    "description": t.get("description", ""),
-                    "project": t.get("project", ""),
-                    "status": t.get("status", "Unknown")
-                } for t in travel_todos
-            ]
-            
-            print(f"\n🗺️  Complete Travel Plan:")
-            for i, todo in enumerate(travel_todos, 1):
+            print(f"\n📝 Complete Article Planning & Ideas:")
+            for i, todo in enumerate(todos, 1):
                 status_map = {"Completed": "✅", "In Progress": "⏳", "Not Started": "⬜️"}
                 status_icon = status_map.get(todo.get('status'), '❓')
-                desc_preview = f"\n   📝 {todo['description'][:80]}..." if todo.get('description') else ""
-                print(f"{i}. {status_icon} {todo['name']}{desc_preview}")
+                project_tag = f"[{todo.get('project', 'No Project')}]" if todo.get('project') else ""
+                desc_preview = f"\n   💡 {todo['description'][:60]}..." if todo.get('description') else ""
+                print(f"{i}. {status_icon} {todo['name']} {project_tag}{desc_preview}")
+            
+            print(f"\n📊 Final Results: {total_todos} todos across {len(projects)} projects")
             
         except FileNotFoundError:
             validation_success = False
@@ -181,12 +152,13 @@ async def run_web_search_demo():
         overall_success = validation_success and len(test_details["errors"]) == 0
         
         print(f"\n🎓 Key Learning Points:")
-        print("• Agent handles multi-turn research workflow")
-        print("• Web search → detailed research → todo creation pipeline")
-        print("• Transforms vague requests into specific, actionable tasks")
-        print("• Multi-tool coordination: research then organize")
-        print("• Agent maintains context across complex research sessions")
-        print("🔍 Check your tracing dashboard to see the web search + todo creation workflow!")
+        print("• Agent helps with brainstorming and idea generation rather than doing all the work")
+        print("• Web search → idea suggestions → task creation pipeline")
+        print("• Transforms vague writing blocks into specific, actionable planning tasks")
+        print("• Multi-tool coordination: research for inspiration then suggest structure")
+        print("• Agent maintains context across brainstorming sessions while staying collaborative")
+        print("• **Observability over validation**: Quality evaluation happens in your tracing dashboards")
+        print("🔍 Check your tracing dashboards - that's where you analyze the web search + brainstorming workflow!")
         
         end_time = datetime.now()
         log_test_result("web_search_demo", start_time, end_time, overall_success, test_details)

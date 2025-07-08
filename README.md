@@ -128,10 +128,10 @@ python tests/run_demo_tests.py websearch
 ```
 
 The test suite demonstrates:
-- **Basic Operations**: Core agent functionality including CRUD and context.
-- **Web Search Demo**: Multi-tool workflows combining research and action.
+- **Basic Operations**: AI Engineers 101 article creation workflow with technical content planning, status progression, and multi-project organization.
+- **Web Search Demo**: AI engineering research and technical writing with web search integration, knowledge synthesis, and research-driven task creation.
 
-Each test includes validation assertions and educational comments, using the same tracing setup as the main application for clean trace separation.
+Each test includes minimal validation and educational comments, using the same tracing setup as the main application for clean trace separation. **Use the observability dashboards to evaluate test quality and agent performance.**
 
 ---
 

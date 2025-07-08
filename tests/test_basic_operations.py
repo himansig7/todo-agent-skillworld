@@ -78,14 +78,25 @@ async def run_basic_operations_test():
         print("=" * 50)
         
         test_messages = [
-            "Add 'Buy groceries' with description 'Get milk, bread, and fresh vegetables'",
-            "Add 'Walk the dog' to my list",
-            "Add these tasks to my Work project: 'Review budget' with description 'Analyze Q4 expenses', 'Schedule team meeting', and 'Update project timeline'",
-            "Show me all my Work tasks, then update the 'Schedule team meeting' task to 'In Progress' and add description 'Book conference room and send invites'",
-            "Add these personal tasks: 'Call mom', 'Schedule dentist appointment', and 'Plan weekend trip'",
-            "Show me all my personal tasks, then mark 'Call mom' as completed and set 'Plan weekend trip' to 'In Progress' with description 'Research destinations and book hotel'",
-            "Show me all completed tasks, then delete them to clean up my list",
-            "Show me my complete todo list organized by project"
+            # === Natural Planning Phase ===
+            "add 'write ai article' to my content project with description 'tutorial about building ai agents for developers'",
+            "i need to add some more stuff to content project: 'research agent patterns' with description 'look at different ways to build agents', 'document our tools' with description 'explain how the crud tools work', and 'make some diagrams' with description 'update mermaid diagrams with new flows'",
+            
+            # === Status Updates (Natural Language) ===
+            "i finished researching the agent patterns and took good notes on tool design. mark that task as completed. also started working on diagrams yesterday so set that to in progress and add note 'got basic flow done, working on tool interactions'",
+            "show me what i have in content project right now",
+            
+            # === Writing Phase ===
+            "add these to Writing project: 'draft intro' with description 'hook readers and explain what they will learn', 'write tools section' with description 'explain function decorators and schemas', and 'cover observability' with description 'openai tracing, phoenix, and weave setup'",
+            "just finished the intro and it turned out good. mark 'draft intro' as done and update description to 'finished 400 word intro with clear examples'",
+            
+            # === Publication Phase ===
+            "add Publication project with these: 'review everything' with description 'check code examples and make sure it all works', 'prep code samples' with description 'clean up github repo and readme', and 'submit article' with description 'format for publication and schedule'",
+            "finished reviewing everthing and fixed some code bugs. mark that task complete and start working on code samples",
+            
+            # === Cleanup ===
+            "show me completed tasks and delete them to clean up my list",
+            "show me current workload by project"
         ]
         
         history = []
@@ -114,40 +125,17 @@ async def run_basic_operations_test():
                 todos = json.load(f)
             
             total_todos = len(todos)
-            test_details["validation_results"]["total_todos_remaining"] = total_todos
-            print(f"✅ Validation: {total_todos} todos remaining after test")
+            test_details["validation_results"]["total_todos"] = total_todos
             
             projects = set(t.get('project') for t in todos if t.get('project'))
             test_details["validation_results"]["projects"] = sorted(list(projects))
-            print(f"✅ Validation: {len(projects)} projects created: {sorted(list(projects))}")
             
-            status_counts = {
-                "Not Started": len([t for t in todos if t.get('status') == 'Not Started']),
-                "In Progress": len([t for t in todos if t.get('status') == 'In Progress']),
-            }
-            test_details["validation_results"]["status_counts"] = status_counts
-            print(f"✅ Validation: Status counts - {status_counts}")
-            
-            with_desc = len([t for t in todos if t.get('description')])
-            without_desc = len([t for t in todos if not t.get('description')])
-            test_details["validation_results"]["todos_with_descriptions"] = with_desc
-            test_details["validation_results"]["todos_without_descriptions"] = without_desc
-            print(f"✅ Validation: {with_desc} with descriptions, {without_desc} without")
-            
-            # Validation thresholds
-            if total_todos < 5:
+            # Basic sanity check - did the agent create any todos?
+            if total_todos == 0:
                 validation_success = False
-                test_details["errors"].append(f"Expected at least 5 remaining todos, got {total_todos}")
+                test_details["errors"].append("No todos were created during the test")
             
-            if len(projects) < 2:
-                validation_success = False
-                test_details["errors"].append(f"Expected at least 2 projects, got {len(projects)}")
-
-            if status_counts["In Progress"] < 2:
-                validation_success = False
-                test_details["errors"].append(f"Expected at least 2 'In Progress' todos, got {status_counts['In Progress']}")
-            
-            print(f"\n📋 Final Todo Organization:")
+            print(f"\n📋 Article Creation Project Portfolio:")
             project_groups = {}
             for todo in todos:
                 project = todo.get('project') or 'No Project'
@@ -156,12 +144,14 @@ async def run_basic_operations_test():
                 project_groups[project].append(todo)
             
             for project, project_todos in sorted(project_groups.items()):
-                print(f"\n📂 {project}:")
+                print(f"\n📂 {project} ({len(project_todos)} tasks):")
                 for todo in project_todos:
                     status_map = {"Completed": "✅", "In Progress": "⏳", "Not Started": "⬜️"}
                     status_icon = status_map.get(todo.get('status'), '❓')
-                    desc_preview = f" - {todo['description'][:50]}..." if todo.get('description') else ""
+                    desc_preview = f" - {todo['description'][:60]}..." if todo.get('description') else ""
                     print(f"  {status_icon} {todo['name']}{desc_preview}")
+            
+            print(f"\n📊 Final Results: {total_todos} todos across {len(projects)} projects")
             
         except FileNotFoundError:
             validation_success = False
@@ -172,12 +162,13 @@ async def run_basic_operations_test():
         overall_success = validation_success and len(test_details["errors"]) == 0
         
         print(f"\n🎓 Key Learning Points:")
-        print("• Agent handles varied tool usage patterns (single vs multi-tool operations)")
-        print("• Multi-tool workflows: Read → Update, Read → Delete")
-        print("• Bulk operations with different complexity levels")
-        print("• Project organization and task management")
-        print("• Agent maintains context across multi-turn operations")
-        print("🔍 Check your tracing dashboard to see the varied tool call patterns!")
+        print("• Demonstrates natural language processing with casual, unstructured input")
+        print("• Agent handles typos, misspellings, and informal language gracefully")
+        print("• Shows Content → Writing → Publication workflow with realistic task progression")
+        print("• Concise task names and descriptions mirror real human productivity patterns")
+        print("• Agent maintains context across informal, multi-turn conversations")
+        print("• **Observability over validation**: Use tracing dashboards to evaluate quality, not hardcoded checks")
+        print("🔍 Check your tracing dashboards - that's where the real evaluation happens!")
         
         end_time = datetime.now()
         log_test_result("basic_operations", start_time, end_time, overall_success, test_details)

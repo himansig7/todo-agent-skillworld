@@ -6,8 +6,8 @@ Simple demonstration tests for the todo-agent project.
 
 | Test | Description | What It Shows |
 |------|-------------|---------------|
-| `test_basic_operations.py` | Core agent functionality | CRUD operations, bulk tasks, project organization, conversation context |
-| `test_web_search_demo.py` | Multi-tool agent workflow | Web search integration, research → actionable todos, proactive behavior |
+| `test_basic_operations.py` | Natural language article creation workflow | Casual input processing, typo handling, concise task management, Content → Writing → Publication phases |
+| `test_web_search_demo.py` | AI brainstorming & idea generation | Web search for inspiration, collaborative planning, idea suggestions → structured tasks |
 
 ## 🚀 Running the Demos
 
@@ -40,14 +40,16 @@ python tests/test_web_search_demo.py
 ## 📋 What Each Demo Shows
 
 ### Basic Operations Demo
-- Creates todos with varied patterns
-- Bulk operations and project organization
-- CRUD lifecycle and conversation context
+- Natural language processing with casual, unstructured input
+- Agent handles typos, misspellings, and informal language gracefully
+- Content → Writing → Publication workflow with realistic task progression
+- Concise task names and descriptions mirror real human productivity patterns
 
 ### Web Search Demo  
-- Proactive research capabilities
-- Multi-tool workflow (web search → todo creation)
-- Value transformation (general idea → specific tasks)
+- Collaborative brainstorming and idea generation workflow
+- Web search → idea suggestions → structured task creation pipeline
+- Agent suggests and supports rather than taking over completely
+- Transforms writer's block into actionable planning tasks
 
 ## 📊 Test Logging & Reporting
 
@@ -64,9 +66,9 @@ Each test automatically logs structured results with:
 - `tests/logs/test_report.md` - Human-readable test report
 
 ### Understanding Test Results
-Each test includes validation thresholds:
-- Basic Operations: Minimum 5 todos, 2 projects (completed tasks are deleted in test)
-- Web Search Demo: Minimum 5 travel todos, 2 detailed todos, 1 destination task
+Each test includes minimal validation (just basic sanity checks):
+- Both tests: Simply verify that some todos were created during the conversation
+- **Real evaluation happens in your tracing dashboards** - use the observability tools to assess quality and performance
 
 ## 🔄 Data Management
 
@@ -94,7 +96,7 @@ with open('data/session_default.json', 'w') as f: json.dump({'history': []}, f)
 
 Each demo uses the same tracing setup as the main application:
 - OpenAI Platform: Native tracing enabled
-- Arize Phoenix Cloud: Project names `todo-agent-test-basic` and `todo-agent-websearch-demo`
+- Arize Phoenix Cloud: Project names `todo-agent-test-basic` and `todo-agent-test-websearch`
 - W&B Weave: Individual tracking for each demo
 
 Check your tracing dashboards to see:
@@ -107,16 +109,16 @@ Check your tracing dashboards to see:
 
 These demos teach core AI engineering concepts:
 
-1. Agent Design: How to build conversational AI that maintains context
-2. Tool Integration: Combining multiple capabilities (CRUD + web search)
-3. Observability: Tracking agent behavior with tracing tools
-4. Validation: Simple checks to ensure agent functionality
-5. Real-world Value: Turning vague requests into actionable plans
+1. Agent Architecture: How to build conversational AI for technical content creation
+2. Tool Design Patterns: CRUD operations, web search integration, and schema validation
+3. **Observability First**: Use tracing dashboards to evaluate agent quality, not hardcoded validation
+4. Workflow Management: Multi-project organization and status progression patterns
+5. Natural Language Processing: Handling casual input, typos, and collaborative interactions
 
 ## 💡 Key Takeaways
 
-- Simple is powerful: Basic CRUD + web search = genuinely useful agent
-- Context matters: Conversation history enables natural interactions
-- Proactivity adds value: Agents that research and suggest are more helpful
-- Observability is crucial: Tracing helps understand and debug agent behavior
-- Validation is essential: Always verify your agent does what you expect 
+- **Observability Over Validation**: Use tracing dashboards to evaluate agent quality, not rigid programmatic checks
+- Natural Language Robustness: Agents handle casual input, typos, and informal language gracefully  
+- Collaborative Intelligence: Best agents suggest and support rather than take over completely
+- Practical Workflows: Status progression and project organization mirror real-world productivity patterns
+- Educational Value: Simple demos that showcase complex AI engineering concepts clearly 
