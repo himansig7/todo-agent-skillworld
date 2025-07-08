@@ -32,14 +32,29 @@ load_dotenv()
 # --- Tracing & Observation Setup ---
 # Initialize integrations to observe and debug the agent's behavior.
 # This is crucial for understanding the agent's decision-making process.
-os.environ["OPENAI_TRACING_ENABLED"] = "1"
-os.environ["WEAVE_PRINT_CALL_LINK"] = "false"
-register(
-    # The project name groups all traces from this CLI application.
-    project_name="todo-agent-cli",
-    auto_instrument=True
-)
-weave.init("todo-agent-cli")
+
+def initialize_tracing():
+    """Initialize tracing with graceful error handling."""
+    os.environ["OPENAI_TRACING_ENABLED"] = "1"
+    os.environ["WEAVE_PRINT_CALL_LINK"] = "false"
+    
+    # Phoenix: Add minimal custom resource attributes via environment variable
+    os.environ["OTEL_RESOURCE_ATTRIBUTES"] = "app.name=todo-agent,tutorial.type=production,environment=production,interface=cli"
+    
+    try:
+        register(project_name="todo-agent-cli", auto_instrument=True)
+        print("✅ Phoenix tracing initialized for: todo-agent-cli")
+    except Exception as e:
+        print(f"⚠️  Phoenix tracing failed: {e}")
+    
+    if not weave.get_client():
+        try:
+            weave.init("todo-agent-cli")
+            print("✅ Weave tracing initialized for: todo-agent-cli")
+        except Exception as e:
+            print(f"⚠️  Weave tracing failed (continuing without Weave): {e}")
+
+initialize_tracing()
 
 # -----------------------------------------------------------------------------
 # Session Management

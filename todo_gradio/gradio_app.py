@@ -19,6 +19,9 @@ def initialize_tracing():
 
     os.environ["OPENAI_TRACING_ENABLED"] = "1"
     os.environ["WEAVE_PRINT_CALL_LINK"] = "false"
+    
+    # Phoenix: Add minimal custom resource attributes via environment variable
+    os.environ["OTEL_RESOURCE_ATTRIBUTES"] = f"app.name=todo-agent,tutorial.type=production,environment=production,interface=gradio"
 
     # Prevent re-initialization on hot-reload
     if not weave.get_client():
