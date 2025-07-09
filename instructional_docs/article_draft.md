@@ -30,23 +30,6 @@ The agent is a proactive assistant for managing tasks. It can:
 
 When you give the agent a command, it follows a clear process. The brain interprets your request, chooses the right tool, uses it, and then formulates a response.
 
-This diagram shows the lifecycle of a single user request:
-
-```mermaid
-graph TD;
-    UserInput["User Input<br/>e.g., 'add buy milk'"] --> MainLoop["main.py: Main Loop"];
-    MainLoop -- "Captures input &<br/>manages history" --> Runner["main.py: Agent Runner"];
-    Runner -- "Invokes agent" --> Agent["agent/todo_agent.py: Agent (LLM + Prompt)"];
-    Agent -- "Decides to use a tool" --> ToolSelection["agent/todo_agent.py: Tool Selection<br/>e.g., create_todo"];
-    ToolSelection -- "Executes function" --> ToolFunction["agent/todo_agent.py: Tool Function<br/>create_todo(...)"];
-    ToolFunction -- "Calls storage layer" --> Storage["agent/storage.py: TodoStorage"];
-    Storage -- "Reads/writes file" --> Data["data/todos.json"];
-    ToolFunction -- "Returns result" --> Agent;
-    Agent -- "Formulates final response" --> Runner;
-    Runner -- "Returns output" --> MainLoop;
-    MainLoop -- "Prints to console" --> AgentOutput["Agent Output<br/>e.g., 'Created to-do...'"];
-```
-
 ---
 
 ## Part 2: The Manager's Toolkit: Understanding AI Performance with Tracing
