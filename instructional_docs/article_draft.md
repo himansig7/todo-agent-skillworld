@@ -1,11 +1,13 @@
 
-# Observability for Foundation Models: A Practical Tool Comparison
+# Out-of-the-Box Observability: OpenAI, Phoenix, and Weave Compared
 
-Hey fellow MLOps practitioners, as we increasingly rely on foundation models, we're giving up direct control over training and fine-tuning. This means our evals have to work harder: the same prompt can drift in performance with model updates, and swapping from a large model to a smaller one (or even between providers) can introduce unexpected changes.
+Hey fellow MLOps practitioners, here's the reality: when you're working with foundation models, you're essentially flying blind unless you have proper observability. The catch? Most teams think they need to build complex custom tracking from scratch. **Plot twist: you don't.**
 
-This creates a real evaluation gap. Basic metrics like cost, latency, and success/failure are a solid start, but to ensure consistent performance, we need to dive into traces and spans. They help us build robust evals, spot patterns across datasets, and measure things like intent accuracy or tool selection quality—no matter how the underlying model evolves.
+Three major platforms—OpenAI's native tracing, Arize Phoenix, and W&B Weave—give you powerful observability capabilities right out of the box. With just a few lines of setup code, you get detailed traces, spans, and metrics that would take weeks to build yourself. But here's the question: which platform gives you the best default experience?
 
-I've been experimenting with three observability platforms—OpenAI's native tracing, Arize Phoenix, and W&B Weave—using a simple multi-tool agent as my test case. In this post, I'll share what I learned: how each platform handles traces, their unique strengths, and when to use them in your MLOps pipeline. Let's bridge that eval gap together—what do you say?
+I spent time testing all three with a simple multi-tool agent, and the results surprised me. Each platform has a distinct personality when it comes to out-of-the-box observability—from OpenAI's clean simplicity to Phoenix's analytics depth to Weave's collaboration focus. In this post, I'll show you exactly what each platform gives you by default, so you can pick the right one for your workflow without reinventing the wheel.
+
+Let's dive into what you actually get for free (or nearly free) when it comes to foundation model observability.
 
 ---
 
@@ -18,22 +20,22 @@ I built this simple CRUD to-do agent to mimic the kind of multi-tool workflows w
 Get it running locally in minutes:
 
 ```bash
-git clone https://github.com/your-repo/todo-agent.git
+git clone https://github.com/leowalker89/todo-agent.git
 cd todo-agent
-uv sync  # Install deps with uv
-cp .env.example .env  # Add your API keys
+uv sync # Install deps with uv
+cp .env.example .env # Add your API keys
 uv run main.py
 ```
 
 Now you're ready to test commands like 'Add a task to research MLOps tools.'
 
-### Why This Makes a Good Eval Test Case
+### Why This Makes a Good Test Case
 
-This agent combines LLM reasoning, tool selection, and multi-step execution—perfect for evaluating things like intent classification accuracy or workflow coherence. In production terms, it's like a lightweight RAG system: vague user input → tool calls → refined output.
+This agent combines LLM reasoning, tool selection, and multi-step execution—perfect for evaluating what each platform shows you by default. In production terms, it's like a lightweight RAG system: vague user input → tool calls → refined output.
 
 ### Core Components
 
-- **Model**: `gpt-4o-mini` for cost-effective intelligence.
+- **Model**: `gpt-4.1-mini` for cost-effective intelligence.
 - **Prompt**: Guides proactive task management.
 - **Tools**:
   - `create_todo`: Add tasks.
@@ -44,17 +46,17 @@ This agent combines LLM reasoning, tool selection, and multi-step execution—pe
 
 ### Execution Flow
 
-The agent interprets your request, selects tools, executes them, and responds—mirroring real MLOps pipelines where drift can hit any step.
+The agent interprets your request, selects tools, executes them, and responds—mirroring real MLOps pipelines where observability becomes crucial for understanding what's happening under the hood.
 
 ---
 
 ## Part 2: Traces & Spans: The Building Blocks
 
-In traditional ML, we relied on validation sets and metrics like F1-score to catch issues before prod. With foundation models, traces fill that role—they're like detailed logs of your AI's decision-making process, helping us evaluate performance without retraining.
+Before we dive into what each platform gives you, let's quickly cover the fundamentals. Understanding traces and spans is key to appreciating what these platforms deliver out-of-the-box.
 
 ### What is a Trace?
 
-A trace is the full execution record of a single workflow, documenting every step from input to output. Think of it as your AI's 'flight recorder'—essential for post-mortems when things drift.
+A trace is the full execution record of a single workflow, documenting every step from input to output. Think of it as your AI's 'flight recorder'—essential for understanding what happened when things go sideways.
 
 ### Breaking It Down: Spans
 
@@ -63,153 +65,114 @@ Each trace consists of spans, which are isolated steps in the process. For our a
 2. **Tool Selection & Execution**: Calling tools like `web_search` or `update_todo`.
 3. **Output Generation**: Formulating the final response.
 
-### Key Metadata for Evaluation
+### Key Metadata You Get For Free
 
-Every span includes metrics that bridge the eval gap:
-- **Latency**: Time per step (in ms)—crucial for spotting bottlenecks during model swaps.
-- **Tokens**: Usage and cost—helps compare large vs. small models.
-- **Input/Output**: Exact data flowing through—perfect for semantic analysis.
-- **Status**: Success or error—basic but expandable for custom evals.
+Here's what all three platforms capture automatically:
+- **Latency**: Time per step (in ms)—crucial for spotting bottlenecks.
+- **Tokens**: Usage and cost—helps with budget tracking.
+- **Input/Output**: Exact data flowing through—perfect for debugging.
+- **Status**: Success or error—basic but expandable.
+- **Tool Calls**: Which tools were selected and their parameters.
 
-By aggregating these across traces, we can make data-driven decisions: tweak prompts if intent classification fails often, or switch models if latency spikes.
-
-### Practical Eval Example: Analyzing Tool Selection Accuracy
-
-Here's how I use spans to evaluate if the agent picks the right tool:
-
-```python
-# Pseudocode: Analyzing spans from exported traces (adapt for your platform)
-import json
-
-def evaluate_tool_accuracy(trace_data: list[dict]) -> float:
-    correct_selections = 0
-    total_spans = 0
-    for trace in trace_data:
-        for span in trace['spans']:
-            if span['type'] == 'tool_call':
-                total_spans += 1
-                # Custom logic: Check if tool matches expected for input
-                if is_correct_tool(span['input'], span['tool_name']):
-                    correct_selections += 1
-    return correct_selections / total_spans if total_spans > 0 else 0.0
-
-# Usage
-traces = json.load(open('exported_traces.json'))
-accuracy = evaluate_tool_accuracy(traces)
-print(f'Tool selection accuracy: {accuracy:.2%}')
-```
-
-This kind of analysis helped me spot when prompt tweaks improved accuracy from 75% to 92% after a model update. What's your go-to eval metric here?
+The beauty? You don't have to manually instrument any of this. These platforms capture it all with minimal setup.
 
 ---
 
-## Part 3: Platform Comparison - What I Learned
+## Part 3: Platform Comparison - What You Get Out of the Box
 
-To put these platforms to the test, I ran the agent's built-in demos—things like article planning and web research—that simulate real MLOps workflows. Here's what stood out when I dug into the traces: each tool has its place depending on your pipeline stage and team needs.
+To test these platforms, I ran the agent's built-in demos—things like article planning and web research—that simulate real MLOps workflows. Here's what each platform delivered with minimal configuration:
 
-### Quick Intro to the Platforms
+### OpenAI Platform
 
-- **OpenAI Native Tracing**: Built-in and zero-fuss, like the default dashboard you reach for quick checks.
-- **Arize Phoenix**: Analytics-heavy for deep dives, great for spotting patterns in large trace sets.
-- **W&B Weave**: Experiment-focused with collaboration features, ideal for team reviews and A/B testing.
+- **Out-of-Box Strengths:** Native integration with OpenAI Agent SDK with zero dependencies. Clean UI optimized for tool call debugging. Real-time trace streaming.
+- **Default Metadata:** Latency, tool calls (input/output), model, tokens (input/output/total), timestamps, request IDs.
+- **Parent/Child Structure:** Clickable trace hierarchy shows agent → tool sequences with clear flow visualization.
+- **Setup:** ~1 line of code
 
-### User Experience at a Glance
+### Arize Phoenix
 
-| Platform      | Dashboard Style                                          | Unique Strength                                                                                                    |
-| :------------ | :------------------------------------------------------- | :----------------------------------------------------------------------------------------------------------------- |
-| **OpenAI**    | **Clean & Basic**. Integrated directly into the platform. | **Simplicity & Zero Setup**. The fastest way to get basic measurements. It just works.                               |
-| **Phoenix**   | **Data-Dense & Analytical**. Packed with charts for experts. | **Deep-Dive Diagnostics**. Best for hands-on debugging and custom analytics during development.                    |
-| **W&B Weave** | **Polished & Professional**. A modern MLOps suite.         | **Rigorous Experiment Tracking**. Best for systematically tracking quality over time and comparing model versions. |
+- **Out-of-Box Strengths:** Model-agnostic platform with waterfall timeline views and automatic bottleneck detection. Built-in cost analytics and session grouping.
+- **Default Metadata:** Workflow names, detailed timings, token counts, cost calculations, span relationships, LLM parameters.
+- **Parent/Child Structure:** Hierarchical waterfall view with automatic parent/child span linking and performance insights.
+- **Setup:** ~2 lines of code
 
-### How They Handle Traces
+### W&B Weave
 
-Each platform visualizes traces a bit differently, which affects how you build evals:
+- **Out-of-Box Strengths:** Framework-agnostic platform with trace trees and built-in feedback collection systems. Automatic experiment grouping and versioning.
+- **Default Metadata:** Full inputs/outputs, execution status, automatic run grouping, model versions, experiment metadata.
+- **Parent/Child Structure:** Interactive tree view tracking complete workflow → operation → sub-call hierarchies.
+- **Setup:** ~2 lines of code
 
-| Platform      | Visualization Style                                                                                              |
-| :------------ | :---------------------------------------------------------------------------------------------------------------- |
-| **OpenAI**    | A simple, chronological log of spans. Easy to read but less visual.                                   |
-| **Phoenix**   | A waterfall chart showing span flow and timings—great for latency analysis.      |
-| **W&B Weave** | A hierarchical waterfall/tree view. Shines for complex, nested workflows. |
+### Comparison Summary
 
-### Hands-On Breakdown
+| Platform | Default Visualization | Key Auto-Captured Metadata | Built-in Collaboration | Setup Lines |
+| --- | --- | --- | --- | --- |
+| OpenAI | Chronological span log | Latency, cost, tool calls | No | ~1 line |
+| Phoenix | Waterfall timeline | Latency, tokens, cost, analytics | No | ~2 lines |
+| W&B Weave | Hierarchical tree view | Inputs, outputs, feedback, experiments | Yes | ~2 lines |
 
-With tracing enabled, I inspected workflows across platforms. Here's the scoop on their fits in an MLOps pipeline:
-
-#### OpenAI Platform
-- **Strengths:** Clean UI for quick filtering. Tool calls are super readable—perfect for initial integration testing.
-- **Metadata:** Latency, cost, usage, tool details. Solid filtering, no heavy project management.
-- **Parent/Child Structure:** Clickable traces show tool sequences clearly.
-- **MLOps Fit:** Early dev and pre-prod validation. If you're iterating prompts solo, this is your quick-win tool. Low overhead means it's great for catching drift during model swaps without extra setup.
-
-![OpenAI trace details](images/openai_inside_trace.png)
-*OpenAI Platform: Clean trace breakdown with tool calls and metadata.*
-
-#### Arize Phoenix
-- **Strengths:** Detailed spans and sessions with parent/child views. Latency/tokens/cost jump out.
-- **Metadata:** Workflow name, timings, tokens, cost—drill into spans for evals.
-- **Parent/Child Structure:** Waterfall view highlights bottlenecks in workflows.
-- **MLOps Fit:** Development debugging and analytics. When you're analyzing failure patterns across a dataset (e.g., after a provider update), Phoenix's charts help quantify eval metrics like accuracy drift.
-
-![Phoenix trace overview](images/phoenix_outside_trace.png)
-*Arize Phoenix: Waterfall view showing parent/child spans and performance metrics.*
-
-#### W&B Weave
-- **Strengths:** Trace trees with feedback/annotation. Complex UI but powerful for teams.
-- **Metadata:** Inputs/outputs, status, comments—built for collaborative evals.
-- **Parent/Child Structure:** Tree view tracks flow from workflow to sub-calls.
-- **MLOps Fit:** Production monitoring and experiments. Ideal for enterprise teams doing A/B tests on model versions or tracking long-term quality—share traces for reviews without screenshots.
-
-![Weave trace details](images/weave_inside_trace.png)
-*W&B Weave: Trace tree with feedback and collaborative features.*
-
-| Platform   | Parent/Child Spans | Key Metadata Shown        | Collaboration | UI Style         |
-|------------|--------------------|---------------------------|---------------|------------------|
-| OpenAI     | Yes                | Latency, cost, tool calls | No            | Clean, simple    |
-| Phoenix    | Yes                | Latency, tokens, cost     | No            | Analytical, deep |
-| W&B Weave  | Yes                | Inputs, outputs, feedback | Yes           | Data science     |
-
-**Core Metadata Across All:** Workflow details, timings, tokens, cost, tool calls, status. All support drilling down for debugging.
-
-**My Take:** OpenAI for speed, Phoenix for analysis, Weave for scale. What's been your experience mixing these in pipelines?
+**The Bottom Line:** All three capture core metadata automatically. The differences lie in visualization style, analytics depth, and collaboration features.
 
 ---
 
-## Part 4: When to Use What - Practical Recommendations
+## Part 4: When to Use What - Out-of-the-Box Recommendations
 
-Based on my experiments, here's my take on fitting these platforms into your MLOps workflow. I'll break it down by stage, with honest pros/cons—because let's face it, no tool is perfect, and trade-offs are part of the game.
+Based on my experiments, here's when each platform's default capabilities shine:
 
-### Development Stage: Rapid Iteration and Debugging
-- **Recommended: Arize Phoenix**
-  - **Pros:** Deep analytics and customizable charts make it easy to spot eval issues like prompt drift early. Great for solo devs analyzing span patterns.
-  - **Cons:** Can feel overwhelming if you're not into heavy data viz—setup takes a few extra lines.
-  - **Scenario:** You're tweaking prompts after a model update and need to quantify accuracy drops. Phoenix's waterfalls helped me debug a 15% intent failure rate in under an hour.
-  - **Trade-off:** More powerful for complex evals, but if your team's small, the learning curve might slow you down.
+### For Quick Debugging: OpenAI Platform
 
-### Pre-Production: Validation and Benchmarking
-- **Recommended: OpenAI Platform**
-  - **Pros:** Zero setup and integrated with your model provider—jump straight to traces without config hassle.
-  - **Cons:** Lacks advanced collaboration; it's more for quick checks than team reviews.
-  - **Scenario:** Testing a swap from GPT-4 to a smaller model? Use it to benchmark latency and cost across traces—saved me from a bad switch that would've spiked tokens by 40%.
-  - **Trade-off:** Super simple for individuals, but if you need to share insights, you'll be screenshotting a lot.
+- **Why:** Requires no additional dependencies if you're already using the OpenAI Python SDK.
+- **Best Default Feature:** Clean, readable tool call traces.
+- **Trade-off:** Limited analytics depth, but sometimes simple is better.
+- **Perfect When:** You need to quickly verify your agent is working correctly.
 
-### Production: Monitoring and Collaboration
-- **Recommended: W&B Weave**
-  - **Pros:** Built-in feedback and experiment tracking—perfect for teams doing A/B tests or long-term monitoring.
-  - **Cons:** Steeper setup and UI complexity; overkill for tiny projects.
-  - **Scenario:** In a scale-up team, use it to track eval metrics over weeks, catching drift from provider updates. Weave's trees made collaborative reviews a breeze in my last project.
-  - **Trade-off:** Enterprise-ready with great scalability, but don't bother if you're not collaborating—stick to lighter options.
+### For Rich Analytics: Arize Phoenix
 
-Don't get me wrong, you can mix and match (I often start with OpenAI and layer on Phoenix for deeper dives). Consider your team size: solo? Go simple. Enterprise? Invest in Weave. Budget tight? All have free tiers to test. What's your stack look like—any hybrid setups working well?
+- **Why:** Gives you professional-grade analytics dashboards with minimal configuration.
+- **Best Default Feature:** Automatic waterfall charts that immediately show performance bottlenecks.
+- **Trade-off:** Slightly more setup, but the payoff in insights is immediate.
+- **Perfect When:** You want to understand performance patterns without building custom dashboards.
+
+### For Team Collaboration: W&B Weave
+
+- **Why:** Built-in experiment tracking and team features from day one.
+- **Best Default Feature:** Automatic experiment organization and sharing capabilities.
+- **Trade-off:** More complex interface, but scales with team needs.
+- **Perfect When:** Multiple people need to review and compare agent performance.
+
+### The Hybrid Approach
+
+Here's what I actually do in practice:
+1. **Start with OpenAI** for immediate validation
+2. **Add Phoenix** when I need deeper performance analysis
+3. **Layer in Weave** when working with a team or running experiments
+
+The beauty is that all three have generous free tiers, so you can test their default capabilities without commitment.
 
 ---
 
-## Conclusion: Why This Matters
+## When You Outgrow the Defaults
 
-Observability is not just about finding errors; it's about understanding and improving your AI. By using these tracing toolkits and their dashboards, you move from guesswork to data-driven management. Each platform offers a unique perspective on your agent’s workflow, letting you choose the right tool for your needs.
+While these out-of-the-box capabilities are impressive, there are scenarios where you'll need custom instrumentation:
 
-Key takeaways from this process:
-- **Observability Over Validation**: Use tracing dashboards to evaluate agent quality, not rigid, hardcoded checks.
-- **Realistic Scenarios**: Learn agent capabilities by having them perform real-world tasks.
-- **Natural Language Robustness**: A well-designed agent can handle casual input, typos, and informal language gracefully.
+- **Custom Metrics**: Domain-specific KPIs like task completion rates or user satisfaction scores
+- **Advanced Analytics**: Complex performance analysis, A/B testing, or custom dashboards  
+- **Specialized Workflows**: Multi-model pipelines, custom evaluation frameworks, or integration with existing monitoring systems
+- **Compliance Requirements**: Specific logging formats, data retention policies, or audit trails
 
-This approach of building, measuring, and refining is the core loop of modern AI engineering. 
+The good news? Starting with these default capabilities gives you a solid foundation to build upon. You'll understand your observability needs better before investing in custom solutions.
+
+---
+
+## Conclusion: The Power of Defaults
+
+Here's the key insight: **you don't need to build observability from scratch**. These platforms give you professional-grade tracing capabilities with just a few lines of setup code. The question isn't whether you should instrument your foundation models—it's which platform's defaults best match your workflow.
+
+Key takeaways:
+- **Start Simple**: OpenAI's built-in tracing gets you 80% of what you need with zero overhead.
+- **Scale Smart**: Phoenix and Weave offer more sophisticated defaults when you need deeper insights.
+- **Mix and Match**: There's no rule saying you can't use multiple platforms—they complement each other well.
+
+The real power here is speed to insight. Instead of spending weeks building custom observability, you can have professional-grade tracing running in minutes. That's time better spent on what actually matters: building better AI.
+
+What's your experience with out-of-the-box observability? Have you found any hidden gems in these platforms' default features? 

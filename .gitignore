@@ -139,3 +139,4 @@ tests/logs/
 
 # Cursor editor files
 .cursor/
+.DS_Store
