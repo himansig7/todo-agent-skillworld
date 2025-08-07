@@ -21,6 +21,12 @@ from dotenv import load_dotenv
 from agent.todo_agent import create_agent
 from agent.storage import JsonTodoStorage
 
+# --- OpenTelemetry Tracing Setup ---
+from opentelemetry import trace
+from opentelemetry.sdk.trace import TracerProvider
+from opentelemetry.sdk.trace.export import SimpleSpanProcessor, ConsoleSpanExporter
+# To save traces to a file, run: python main.py > otel_traces.log
+
 # --- Initial Setup ---
 # Load environment variables from a .env file. This is a best practice for
 # managing secrets and configuration without hardcoding them in the source code.
@@ -28,6 +34,13 @@ load_dotenv()
 
 # --- Tracing & Observation Setup ---
 # (Tracing disabled for local development)
+
+# Set up OpenTelemetry to write traces to a file in JSON format
+trace.set_tracer_provider(TracerProvider())
+tracer = trace.get_tracer(__name__)
+span_processor = SimpleSpanProcessor(ConsoleSpanExporter())
+trace.get_tracer_provider().add_span_processor(span_processor)
+
 
 # -----------------------------------------------------------------------------
 # Session Management
@@ -89,11 +102,13 @@ async def main():
             history = history[start_index:]
 
         # --- Agent Execution ---
-        # The Runner handles the conversation turn, calling tools and the LLM.
-        result = await Runner.run(
-            agent,
-            input=history,
-        )
+        with tracer.start_as_current_span("agent_run") as span:
+            span.set_attribute("user_input", user_input)
+            # The Runner handles the conversation turn, calling tools and the LLM.
+            result = await Runner.run(
+                agent,
+                input=history,
+            )
         print("----"*10)
         print(f"Agent: {result.final_output}")
         print("===="*10)

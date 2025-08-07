@@ -16,7 +16,17 @@ from agent.storage import InMemoryTodoStorage, TodoStatus
 # Load environment variables from .env file
 load_dotenv()
 
-# Tracing setup removed for local dev
+# --- OpenTelemetry Tracing Setup ---
+from opentelemetry import trace
+from opentelemetry.sdk.trace import TracerProvider
+from opentelemetry.sdk.trace.export import SimpleSpanProcessor, ConsoleSpanExporter
+# To save traces to a file, run: python todo_gradio/gradio_app.py > otel_traces.log
+
+trace.set_tracer_provider(TracerProvider())
+tracer = trace.get_tracer(__name__)
+span_processor = SimpleSpanProcessor(ConsoleSpanExporter())
+trace.get_tracer_provider().add_span_processor(span_processor)
+
 
 def format_todos_for_display(todos: list) -> pd.DataFrame:
     """
@@ -53,8 +63,9 @@ async def agent_chat(user_input: str, chat_history: list, storage_instance: InMe
         storage=storage_instance,
         agent_name="To-Do Agent (Gradio)"
     )
-
-    result = await Runner.run(agent, input=chat_history)
+    with tracer.start_as_current_span("agent_run") as span:
+        span.set_attribute("user_input", user_input)
+        result = await Runner.run(agent, input=chat_history)
     full_history = result.to_input_list()
     
     # Hide raw tool calls in display
