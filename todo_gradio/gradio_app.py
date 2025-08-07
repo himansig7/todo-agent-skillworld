@@ -19,12 +19,16 @@ load_dotenv()
 # --- OpenTelemetry Tracing Setup ---
 from opentelemetry import trace
 from opentelemetry.sdk.trace import TracerProvider
-from opentelemetry.sdk.trace.export import SimpleSpanProcessor, ConsoleSpanExporter
-# To save traces to a file, run: python todo_gradio/gradio_app.py > otel_traces.log
+from opentelemetry.sdk.trace.export import SimpleSpanProcessor
+from otel_file_exporter import FileSpanExporter
+import os
 
+# Set up OpenTelemetry to write traces to a file
 trace.set_tracer_provider(TracerProvider())
 tracer = trace.get_tracer(__name__)
-span_processor = SimpleSpanProcessor(ConsoleSpanExporter())
+trace_log_path = os.path.join(os.path.dirname(__file__), '..', 'otel_traces.log')
+file_exporter = FileSpanExporter(trace_log_path)
+span_processor = SimpleSpanProcessor(file_exporter)
 trace.get_tracer_provider().add_span_processor(span_processor)
 
 
