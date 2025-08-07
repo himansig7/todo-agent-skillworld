@@ -13,6 +13,7 @@ This script demonstrates a typical setup for a stateful, conversational agent:
 import os
 import asyncio
 import json
+import time
 
 # Third-party imports
 from dotenv import load_dotenv
@@ -28,6 +29,7 @@ from agents import Agent, Runner
 from opentelemetry import trace
 from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.trace.export import SimpleSpanProcessor
+from opentelemetry.trace import Status, StatusCode
 from otel_file_exporter import FileSpanExporter
 
 # Load environment variables from .env file
@@ -102,13 +104,56 @@ async def main():
             history = history[start_index:]
 
         # --- Agent Execution ---
+        start_time = time.time()
+        
+        # Estimate input tokens (rough approximation)
+        def count_tokens_in_content(content):
+            if isinstance(content, str):
+                return len(content.split())
+            elif isinstance(content, list):
+                # Handle streaming response chunks
+                return sum(len(chunk.get('text', '').split()) for chunk in content if isinstance(chunk, dict))
+            else:
+                return 0
+        
+        input_tokens = len(user_input.split()) + sum(count_tokens_in_content(msg.get("content", "")) for msg in history)
+        
         with tracer.start_as_current_span("agent_run") as span:
             span.set_attribute("user_input", user_input)
-            # The Runner handles the conversation turn, calling tools and the LLM.
-            result = await Runner.run(
-                agent,
-                input=history,
-            )
+            span.set_attribute("num_turns", len(history))
+            span.set_attribute("session_file", SESSION_FILE)
+            span.set_attribute("estimated_input_tokens", input_tokens)
+            span.set_attribute("start_time", start_time)
+
+            try:
+                result = await Runner.run(agent, input=history)
+                
+                # Calculate timing and token metrics
+                end_time = time.time()
+                response_time = end_time - start_time
+                output_tokens = len(result.final_output.split())
+                total_tokens = input_tokens + output_tokens
+                
+                # Set span attributes for metrics
+                span.set_attribute("agent_output", result.final_output[:200])  # Avoid logging huge output
+                span.set_attribute("response_time_seconds", response_time)
+                span.set_attribute("estimated_input_tokens", input_tokens)
+                span.set_attribute("output_tokens", output_tokens)
+                span.set_attribute("total_tokens", total_tokens)
+                span.set_attribute("tokens_per_second", total_tokens / response_time if response_time > 0 else 0)
+                span.set_status(Status(StatusCode.OK))
+                
+                print(f"[Metrics] Response time: {response_time:.2f}s, Input tokens: ~{input_tokens}, Output tokens: {output_tokens}, Total: {total_tokens}")
+                
+            except Exception as e:
+                end_time = time.time()
+                response_time = end_time - start_time
+                span.set_attribute("response_time_seconds", response_time)
+                span.record_exception(e)
+                span.set_status(Status(StatusCode.ERROR, str(e)))
+                print(f"Agent error: {e}")
+                return
+
         print("----"*10)
         print(f"Agent: {result.final_output}")
         print("===="*10)
