@@ -4,8 +4,8 @@ from typing import List, Optional, Any, Dict
 from datetime import datetime, timezone
 import gradio as gr
 from agents import Agent, function_tool, RunContextWrapper, WebSearchTool, Runner
-from phoenix.otel import register
-import weave
+# Tracing imports removed for local dev
+from dotenv import load_dotenv
 
 # Add parent directory to path for local imports
 import sys
@@ -13,28 +13,10 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from agent.todo_agent import create_agent
 from agent.storage import InMemoryTodoStorage, TodoStatus
 
-def initialize_tracing():
-    """Initializes Phoenix and Weave tracing for the application."""
-    project_name = "todo-agent-gradio"
+# Load environment variables from .env file
+load_dotenv()
 
-    os.environ["OPENAI_TRACING_ENABLED"] = "1"
-    os.environ["WEAVE_PRINT_CALL_LINK"] = "false"
-    
-    # Phoenix: Add minimal custom resource attributes via environment variable
-    os.environ["OTEL_RESOURCE_ATTRIBUTES"] = f"app.name=todo-agent,tutorial.type=production,environment=production,interface=gradio"
-
-    # Prevent re-initialization on hot-reload
-    if not weave.get_client():
-        try:
-            register(project_name=project_name, auto_instrument=True)
-            weave.init(project_name=project_name)
-            print(f"Tracing initialized for project: '{project_name}'")
-        except Exception as e:
-            print(
-                f"Warning: Tracing initialization failed. The app will work, but traces will not be captured. Error: {e}"
-            )
-
-initialize_tracing()
+# Tracing setup removed for local dev
 
 def format_todos_for_display(todos: list) -> pd.DataFrame:
     """
