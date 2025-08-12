@@ -4,8 +4,13 @@ from typing import List, Optional, Any, Dict
 from datetime import datetime, timezone
 import gradio as gr
 from agents import Agent, function_tool, RunContextWrapper, WebSearchTool, Runner
-# Tracing imports removed for local dev
 from dotenv import load_dotenv
+
+# OpenLLMetry imports
+from traceloop.sdk import Traceloop
+from traceloop.sdk.decorators import workflow
+
+Traceloop.init(disable_batch=True)  # For local development
 
 # Add parent directory to path for local imports
 import sys
@@ -45,6 +50,14 @@ def format_todos_for_display(todos: list) -> pd.DataFrame:
     
     return display_df
 
+@workflow(name="gradio_todo_agent_execution")
+async def gradio_agent_workflow(agent, chat_history: list):
+    """
+    Annotated workflow for Gradio todo agent execution.
+    This will be tracked as a complete workflow in OpenLLMetry.
+    """
+    return await Runner.run(agent, input=chat_history)
+
 async def agent_chat(user_input: str, chat_history: list, storage_instance: InMemoryTodoStorage):
     """Handles chat interaction between user and agent."""
     chat_history.append({"role": "user", "content": user_input})
@@ -54,7 +67,7 @@ async def agent_chat(user_input: str, chat_history: list, storage_instance: InMe
         agent_name="To-Do Agent (Gradio)"
     )
 
-    result = await Runner.run(agent, input=chat_history)
+    result = await gradio_agent_workflow(agent, chat_history)
     full_history = result.to_input_list()
     
     # Hide raw tool calls in display
