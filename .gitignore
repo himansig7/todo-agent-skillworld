@@ -141,3 +141,6 @@ tests/logs/
 .cursor/
 .DS_Store
 instructional_docs/images/
+
+# Logs
+logs/
