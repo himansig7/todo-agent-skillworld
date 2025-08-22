@@ -3,7 +3,7 @@ Entry point for the command-line interface (CLI) of the todo-agent.
 
 This script demonstrates a typical setup for a stateful, conversational agent:
 - Loads environment variables for API keys and configuration.
-- Initializes tracing and observability integrations (Phoenix, Weave).
+- Initializes tracing and observability integrations (Weave; Phoenix can be added via OTEL elsewhere).
 - Manages conversation history by saving and loading it from a JSON file.
 - Creates an agent with a file-based storage backend (`JsonTodoStorage`).
 - Runs a loop to interact with the user via the command line.
@@ -17,19 +17,24 @@ import json
 # Third-party imports
 from dotenv import load_dotenv
 
+# Observability
+import weave  # Weave tracing
+
 # Local application imports
 from agent.todo_agent import create_agent
 from agent.storage import JsonTodoStorage
 from agents import Runner
-from agents.run import RunConfig
+from agents.run import RunConfig  # (kept for future use if needed)
 
 # --- Initial Setup ---
 # Load environment variables from a .env file. This is a best practice for
 # managing secrets and configuration without hardcoding them in the source code.
 load_dotenv()
 
-# --- Tracing & Observation Setup ---
-# (Tracing disabled for local development)
+# --- Tracing & Observation Setup (Weave) ---
+# Set WEAVE_PROJECT in your .env (e.g., "your-entity/todo-agent").
+# If unset, this defaults to "todo-agent" (local dev-friendly).
+weave.init(os.getenv("WEAVE_PROJECT", "todo-agent"))
 
 # -----------------------------------------------------------------------------
 # Session Management
@@ -38,7 +43,8 @@ load_dotenv()
 # to a JSON file, allowing the agent to "remember" past interactions.
 # -----------------------------------------------------------------------------
 SESSION_FILE = "data/session_default.json"
-MAX_TURNS = 12 # Max *user* turns to keep in history to prevent token overflow.
+MAX_TURNS = 12  # Max *user* turns to keep in history to prevent token overflow.
+
 
 def load_session() -> list:
     """Loads the message history from the session file."""
@@ -51,6 +57,7 @@ def load_session() -> list:
         # If the file doesn't exist or is empty/corrupt, start a new session.
         return []
 
+
 def save_session(history: list):
     """Saves the message history to the session file."""
     # Ensure the 'data' directory exists.
@@ -59,25 +66,54 @@ def save_session(history: list):
         # Save the history in a structured format.
         json.dump({"history": history}, f, indent=2)
 
+
+# ---------------------------
+# Weave-traced helper ops
+# ---------------------------
+@weave.op()
+def trace_user_message(message: str) -> int:
+    """Record the user message length (as a simple example metric)."""
+    return len(message)
+
+
+@weave.op()
+def trace_agent_output(output_text: str) -> int:
+    """Record the assistant output length (as a simple example metric)."""
+    return len(output_text)
+
+
+@weave.op()
+def trace_turn_summary(user_text: str, agent_text: str) -> dict:
+    """Compact turn summary that appears as a single node in the trace tree."""
+    return {"user": user_text, "assistant": agent_text}
+
+
 async def main():
     # Load the previous conversation history to maintain context.
     history = load_session()
-    
+
     # Create the agent instance using the central factory,
     # providing it with the file-based storage system.
     agent = create_agent(
         storage=JsonTodoStorage(),
         agent_name="To-Do Agent (CLI)"
     )
-    print("To-Do Agent (CLI) is ready. Tracing is enabled. Type 'exit' to quit.")
-    
+    print("To-Do Agent (CLI) is ready. Tracing (Weave) is enabled. Type 'exit' to quit.")
+
     # Start the main interaction loop.
     while True:
         user_input = input("\nYou: ")
         if user_input.strip().lower() in ("exit", "quit"):
             print("Goodbye!")
             break
-        
+
+        # Trace the user input as an op (shows up in Weave trace tree)
+        try:
+            trace_user_message(user_input)
+        except Exception:
+            # Tracing should never crash the app; swallow trace errors.
+            pass
+
         # Add the new user message to the history.
         history.append({"role": "user", "content": user_input})
 
@@ -96,17 +132,28 @@ async def main():
             agent,
             input=history,
         )
-        print("----"*10)
-        print(f"Agent: {result.final_output}")
-        print("===="*10)
-        
-        # The agent's result contains the full, updated history (user, assistant, tools).
-        # We replace our local history with this to prepare for the next turn.
+
+        # Extract final output text for display + tracing
+        final_text = result.final_output if isinstance(result.final_output, str) else str(result.final_output)
+
+        print("----" * 10)
+        print(f"Agent: {final_text}")
+        print("====" * 10)
+
+        # Trace the assistant output + a compact summary node
+        try:
+            trace_agent_output(final_text)
+            trace_turn_summary(user_input, final_text)
+        except Exception:
+            pass
+
+        # Replace our local history with the agent's updated history (user, assistant, tools).
         history = result.to_input_list()
-        
+
         # Save the updated history to disk to maintain state for the next session.
         save_session(history)
 
+
 if __name__ == "__main__":
     # Run the asynchronous main function.
-    asyncio.run(main()) 
+    asyncio.run(main())
